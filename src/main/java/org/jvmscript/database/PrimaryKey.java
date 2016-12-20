@@ -13,11 +13,9 @@ public class PrimaryKey implements Serializable {
     public String toString(Object obj) {
         return ToStringBuilder.reflectionToString(obj);
     }
-
     public boolean equals(Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj, new String[0]);
     }
-
     public int hashCode() {
         return HashCodeBuilder.reflectionHashCode(this, new String[0]);
     }
