@@ -20,7 +20,6 @@ public class EmailUtility {
     public static void openImapConnection(String server, String user, String password) throws Exception {
         Properties props = System.getProperties();
 
-
         props.setProperty("mail.imapStore.protocol","imap");
 
         session = Session.getDefaultInstance(props, null);
@@ -56,20 +55,23 @@ public class EmailUtility {
         String smtpServer = properties.getProperty("smtp.server");
         String smtpUser = properties.getProperty("smtp.user");
         String smtpPassword = properties.getProperty("smtp.password");
+        String smtpPort = properties.getProperty("smtp.port", "465");
 
-        openSmtpConnection(smtpServer, smtpUser, smtpPassword);
+        openSmtpConnection(smtpServer, smtpPort, smtpUser, smtpPassword);
     }
 
-    public static void openSmtpConnection(String server, String user, String password) throws Exception {
+    public static void openSmtpConnection(String server, String smtpPort, String user, String password) throws Exception {
         Properties props = System.getProperties();
-        props.setProperty("mail.smtp.port","587");
+        props.setProperty("mail.smtp.port",smtpPort);
         props.setProperty("mail.smtp.auth", "true");
         props.setProperty("mail.smtp.starttls.enable", "true");
+        props.setProperty("mail.smtp.host",server);
+        props.setProperty("mail.smtp.from",user);
 
         session = Session.getDefaultInstance(props, null);
 
-        smtpTransport = session.getTransport("smtp");
-        smtpTransport.connect(server, user, password);
+        smtpTransport = session.getTransport();
+        smtpTransport.connect(user, password);
     }
 
     public static void closeSmtpConnection() throws MessagingException {
