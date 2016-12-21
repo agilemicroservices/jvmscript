@@ -2,12 +2,16 @@ package org.jvmscript.sql;
 
 import org.jvmscript.email.EmailMessage;
 import static org.jvmscript.cli.CliUtility.*;
+import static org.jvmscript.log.LogUtility.initLogger;
 import static org.jvmscript.sql.SqlUtility.*;
 import static org.jvmscript.email.EmailUtility.*;
 import static org.jvmscript.file.FileUtility.*;
 
 public class SqlExtract {
     public static void main(String[] args) throws Exception {
+
+        initLogger("SqlExract");
+
         String fileExtension = ".csv";
         boolean excelOutput = false;
 

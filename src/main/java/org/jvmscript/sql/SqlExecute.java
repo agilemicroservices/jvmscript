@@ -6,12 +6,15 @@ import static org.jvmscript.log.LogUtility.*;
 
 public class SqlExecute {
     public static void main(String[] args) throws Exception{
+
+        initLogger("SqlExecute");
+
         cliUtilityInitialize();
         cliAddOption("propertyFile", true, true);
         cliAddOption("sqlFile", true, true);
         cliParse(args);
 
-        String sqlFilename = "sql\\" + cliGetOptionValue("sqlFile");
+        String sqlFilename = cliGetOptionValue("sqlFile");
         openSqlConnection(cliGetOptionValue("propertyFile"));
 
         executeSqlFile(sqlFilename);
