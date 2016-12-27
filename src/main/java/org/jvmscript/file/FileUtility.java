@@ -15,8 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
 import static org.jvmscript.datetime.DateTimeUtility.*;
 
@@ -513,9 +516,42 @@ public class FileUtility {
         return (file.exists() && !file.isDirectory());
     }
 
-    public static void main(String[] args) throws Exception {
-        unGzipFile("/dev/data/historical_rom_20160930.gz");
+    public static void copyDirectory(String sourceDirectory, String destDirectory) throws Exception {
+        File sourceDir = new File(sourceDirectory);
+        File destDir = new File(destDirectory);
+        FileUtils.copyDirectory(sourceDir, destDir);  ;
     }
 
+    public static void archiveDirectoryWithDate(String sourceDirectory, String destDirectory) throws Exception {
+        String dateFormat = "yyyy-MM" + File.separator + "yyyy-MM-dd";
+        archiveDirectoryWithDate(sourceDirectory, destDirectory, dateFormat);
+    }
 
+    public static void archiveDirectoryWithDate(String sourceDirectory, String destDirectory, String dateFormat) throws Exception {
+        String archiveDirectory = destDirectory +
+                                  File.separator +
+                                  DateTimeUtility.getDateString(dateFormat) +
+                                  File.separator;
+
+        File archiveFile = new File(archiveDirectory);
+
+        Iterator<File> fileIterator = FileUtils.iterateFiles(new File(sourceDirectory), null, true);
+         while (fileIterator.hasNext()) {
+            File file = fileIterator.next();
+
+            if (!file.isDirectory()) {
+                Path sourcePath = file.getParentFile().toPath();
+                Path destDirPath = archiveFile.toPath();
+
+                File destDirFile = destDirPath.resolve(sourcePath).toFile();
+
+                FileUtils.moveToDirectory(file, destDirFile, true);
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        //zipDirectory("source", true);
+        //archiveDirectoryWithDate("source", "archive");
+    }
 }
