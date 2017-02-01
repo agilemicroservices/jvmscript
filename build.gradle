@@ -1,6 +1,7 @@
 buildscript {
     repositories {
         mavenCentral()
+        maven { url 'https://repository.jboss.org/nexus/content/groups/public' }
     }
     dependencies {
         classpath group: 'com.layer', name: 'gradle-git-repo-plugin', version: '2.0.2'
@@ -12,7 +13,6 @@ version '1.0'
 
 apply plugin: 'groovy'
 apply plugin: 'java'
-apply plugin: 'scala'
 apply plugin: 'maven-publish'
 apply plugin: 'git-repo'
 apply plugin: 'signing'
@@ -20,7 +20,7 @@ apply plugin: 'signing'
 sourceCompatibility = 1.8
 
 ext {
-    pomFilePath = "${project.projectDir}/build/publications/jar/pom-default.xml"
+    pomFilePath = "${project.projectDir}/buildRules/publications/jar/pom-default.xml"
     pomFile = file(pomFilePath)
 
     gitPublishConfig {
@@ -33,6 +33,7 @@ ext {
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url 'https://repository.jboss.org/nexus/content/groups/public' }
 }
 
 task sourceJar(type: Jar, dependsOn: classes) {
@@ -87,14 +88,13 @@ def getSignatureFiles = {
     ]
 }
 
-
 task wrapper(type: Wrapper) {
     gradleVersion = '2.9'
 }
 
 dependencies {
-    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.7'
-    compile 'org.scala-lang:scala-library:2.12.1'
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.8'
+
 
     compile group: 'javax.mail', name: 'javax.mail-api', version: '1.5.6'
     compile group: 'com.sun.mail', name: 'javax.mail', version: '1.5.6'
@@ -111,6 +111,11 @@ dependencies {
     compile (group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15') {
         exclude group: 'stax', module: 'stax-api'
     }
+
+    compile group: 'org.kie', name: 'kie-api', version: '6.5.0.Final'
+    compile group: 'org.kie', name: 'kie-spring', version: '6.5.0.Final'
+    compile group: 'org.drools', name: 'drools-compiler', version: '6.5.0.Final'
+    compile group: 'org.drools', name: 'drools-core', version: '6.5.0.Final'
 
     compile group: 'com.univocity', name: 'univocity-parsers', version: '2.3.0'
     compile group: 'net.lingala.zip4j', name: 'zip4j', version: '1.3.2'
