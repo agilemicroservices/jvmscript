@@ -20,7 +20,7 @@ apply plugin: 'signing'
 sourceCompatibility = 1.8
 
 ext {
-    pomFilePath = "${project.projectDir}/buildRules/publications/jar/pom-default.xml"
+    pomFilePath = "${project.projectDir}/build/publications/jar/pom-default.xml"
     pomFile = file(pomFilePath)
 
     gitPublishConfig {
