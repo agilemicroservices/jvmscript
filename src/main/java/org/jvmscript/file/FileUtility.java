@@ -10,6 +10,7 @@ import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jvmscript.datetime.DateTimeUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,7 +367,19 @@ public class FileUtility {
 
     public static void cleanDirectory(String directoryName) throws IOException {
         File directory = new File(directoryName);
-        FileUtils.cleanDirectory(directory);
+
+        if (!directory.isDirectory()) {
+            throw new IOException(directoryName + " is not a directory");
+        }
+
+        Iterator<File> fileIterator = FileUtils.iterateFiles(directory, null, true);
+        while (fileIterator.hasNext()) {
+            File file = fileIterator.next();
+
+            if (!file.isDirectory()) {
+                FileUtils.forceDelete(file);
+            }
+        }
     }
 
     public static String dateStampFile(String sourceFilename) throws IOException {
@@ -473,18 +486,20 @@ public class FileUtility {
         logger.info("zipFile {} files added to {} zipfile", filenameList.length, zipFilename);
     }
 
-    public static void zipDirectory(String directoryName) throws Exception {
-        zipDirectory(directoryName, false);
+    public static String zipDirectory(String directoryName) throws Exception {
+        return zipDirectory(directoryName, false);
     }
 
-    public static void zipDirectory(String directoryName, boolean recursive) throws Exception {
+    public static String zipDirectory(String directoryName, boolean recursive) throws Exception {
         File directory = new File(directoryName);
 
         if (!directory.isDirectory()) {
             logger.error("zipDirectory {} is not a directory", directoryName);
         }
 
-        String zipFilename = FilenameUtils.getFullPathNoEndSeparator(directoryName) + ".zip";
+        String endPath = directory.getName();
+
+        String zipFilename = directory.getAbsolutePath() + File.separator + endPath + ".zip";
         ZipFile zipFile = new ZipFile(zipFilename);
 
         if (recursive) {
@@ -501,6 +516,8 @@ public class FileUtility {
         }
 
         logger.info("zipDirectory directory {} added to {} zipfile", directoryName, zipFilename);
+
+        return zipFilename;
     }
 
     private static ZipParameters getDefaultZipParameters() {
@@ -528,12 +545,14 @@ public class FileUtility {
     }
 
     public static void archiveDirectoryWithDate(String sourceDirectory, String destDirectory, String dateFormat) throws Exception {
+        logger.info("archiveDirectoryWithDate directory {} archive to {}", sourceDirectory, destDirectory);
         String archiveDirectory = destDirectory +
                                   File.separator +
                                   DateTimeUtility.getDateString(dateFormat) +
                                   File.separator;
 
-        File archiveFile = new File(archiveDirectory);
+        Path destDirPath = Paths.get(archiveDirectory);
+        Path basePath = new File(sourceDirectory).getParentFile().toPath();
 
         Iterator<File> fileIterator = FileUtils.iterateFiles(new File(sourceDirectory), null, true);
          while (fileIterator.hasNext()) {
@@ -541,17 +560,20 @@ public class FileUtility {
 
             if (!file.isDirectory()) {
                 Path sourcePath = file.getParentFile().toPath();
-                Path destDirPath = archiveFile.toPath();
-
-                File destDirFile = destDirPath.resolve(sourcePath).toFile();
-
+                Path relativePath = basePath.relativize(sourcePath);
+                File destDirFile = destDirPath.resolve(relativePath).toFile();
                 FileUtils.moveToDirectory(file, destDirFile, true);
             }
         }
     }
 
     public static void main(String[] args) throws Exception {
-        //zipDirectory("source", true);
-        //archiveDirectoryWithDate("source", "archive");
+        String directoryName = "\\opt\\rmis\\ax-dropcopy\\temp\\";
+        String zipFile = zipDirectory(directoryName, true);
+        String[] archiveFile = archiveAndTimeStampFile(zipFile);
+        //cleanDirectory(directoryName);
+        //System.out.println("size = " + archiveFile.length);
+
+        //archiveDirectoryWithDate("\\opt\\rmis\\orbis-dropcopy\\temp", "\\opt\\rmis\\orbis-dropcopy\\archive");
     }
 }
