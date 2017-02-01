@@ -35,7 +35,8 @@ public class DroolsUtility {
     }
 
 
-    public FactHandle insertFact(Object fact) {
+    public FactHandle insertFact(Object fact) throws Exception {
+        if (kieContainer == null) buildRules();
         return kieSession.insert(fact);
     }
 

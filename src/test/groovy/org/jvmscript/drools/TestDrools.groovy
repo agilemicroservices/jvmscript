@@ -27,7 +27,6 @@ import spock.lang.Specification
         then:
             droolsUtility.addRulesFromString("/rule1.drl", rule1)
             droolsUtility.addRulesFromString("/rule2.drl", rule2)
-            droolsUtility.buildRules()
             droolsUtility.insertFact("Hello World")
             droolsUtility.runRulesOnce()
 
@@ -36,7 +35,6 @@ import spock.lang.Specification
 
             droolsUtility.resetRules()
             droolsUtility.addRulesFromString("/rule2.drl", rule2)
-            droolsUtility.buildRules()
             droolsUtility.insertFact("Hello World reload")
             droolsUtility.insertFact("Reset")
             droolsUtility.runRulesOnce()
