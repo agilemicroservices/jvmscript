@@ -19,20 +19,23 @@ public class SqlExtract {
         cliAddOption("propertyFile", true, true);
         cliAddOption("sqlFile", true, true);
         cliAddOption("outputDir", true, false);
-        cliAddOption("delimiteParam", true, false);
+        cliAddOption("delimiterParam", true, false);
         cliAddOption("excel", false, false);
         cliAddOption("emailList", true, false);
+        cliAddOption("filename", true, false);
         cliParse(args);
 
         SqlUtility.delimiter = cliGetOptionValue("delimiterParam", ",").charAt(0);
         if (cliHasOption("excel")) excelOutput = true;
 
-        if (SqlUtility.delimiter == ',') fileExtension = ".txt";
+        if (SqlUtility.delimiter == ',') fileExtension = ".csv";
+        else fileExtension = ".txt";
         if (excelOutput) fileExtension = ".xlsx";
 
         String sqlFilename = cliGetOptionValue("sqlFile");
         String outputDir = cliGetOptionValue("outputDir", "");
-        String outputFilename = outputDir + getFileBaseName(sqlFilename) + fileExtension;
+        String filename = cliGetOptionValue("filename", getFileBaseName(sqlFilename) + fileExtension);
+        String outputFilename = outputDir + filename;
 
         if (cliHasOption("propertyFile"))
             openSqlConnection(cliGetOptionValue("propertyFile"));

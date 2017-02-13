@@ -65,7 +65,7 @@ public class DelimitedRecordFactory extends RecordFactory {
         return beans;
     }
 
-    public void writeRecordListToDelimitedFile(String filename, ArrayList<? extends Object> beanList) throws IOException {
+    public void writeRecordListToDelimitedFile(String filename, List<? extends Object> beanList) throws IOException {
 
         Path outputPath = Paths.get(filename);
         BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8);

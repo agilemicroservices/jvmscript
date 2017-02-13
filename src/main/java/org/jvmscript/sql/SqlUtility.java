@@ -155,6 +155,11 @@ public class SqlUtility {
         fileOutputStream.close();
     }
 
+    public static <T> List<T> executeSqlFileToList(String sqlQueryFilename, Class<T> clazz, Object... params) throws IOException{
+        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename));
+        return executeSqlToList(sqlQuery, clazz, params);
+    }
+
     public static <T> List<T> executeSqlToList(String sql, Class<T> clazz, Object... params) {
         Query query =  connection.createQueryWithParams(sql, params);
         return query.executeAndFetch(clazz);
