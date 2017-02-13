@@ -29,6 +29,8 @@ public class DroolsUtility {
         kieFileSystem = kieServices.newKieFileSystem();
     }
 
+    public KieSession getKieSession() {return kieSession;}
+
     @PostConstruct
     public void initialize() {
         kieSession = kieContainer.newKieSession();
@@ -101,6 +103,9 @@ public class DroolsUtility {
     }
 
     public void addRuleFromClassPath(String ... drlFiles) {
+        for (String drlFile: drlFiles) {
+            kieFileSystem.write(ResourceFactory.newClassPathResource(drlFile, "UTF-8"));
+        }
     }
 
     public void buildRules() throws Exception {

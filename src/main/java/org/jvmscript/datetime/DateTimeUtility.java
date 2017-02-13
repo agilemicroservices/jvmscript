@@ -50,5 +50,4 @@ public class DateTimeUtility {
         LocalDateTime now = LocalDateTime.now();
         return now.format(DateTimeFormatter.ofPattern(format));
     }
-
 }
