@@ -31,3 +31,42 @@
 15:24:43.832 INFO  Job ID<> o.d.c.k.b.impl.KieRepositoryImpl - KieModule was added: MemoryKieModule[releaseId=org.default:artifact:1.0.0-SNAPSHOT]
 15:24:44.189 INFO  Job ID<> o.d.c.k.b.impl.KieRepositoryImpl - KieModule was added: org.jvmscript.drools.DroolsUtility$1@ce9b9a9
 15:24:44.217 INFO  Job ID<> o.d.c.k.b.impl.KieRepositoryImpl - KieModule was added: MemoryKieModule[releaseId=org.default:artifact:1.0.0-SNAPSHOT]
+19:15:23.219 INFO  Job ID<> org.jvmscript.file.FileUtility - zipDirectory directory \opt\rmis\ax-dropcopy\temp\ added to C:\opt\rmis\ax-dropcopy\temp\temp.zip zipfile
+19:15:23.261 INFO  Job ID<> org.jvmscript.file.FileUtility - Source File C:\opt\rmis\ax-dropcopy\temp\temp.zip Time Stamped to C:\opt\rmis\ax-dropcopy\temp\temp.20170222-191523.zip
+19:15:23.262 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.zip Moved to File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-191523.zip
+19:15:23.267 INFO  Job ID<> org.jvmscript.file.FileUtility - Archive File(s) C:\opt\rmis\ax-dropcopy\temp\temp.20170222-191523.zip to C:\opt\rmis\ax-dropcopy\temp\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:15:23.270 INFO  Job ID<> org.jvmscript.file.FileUtility - makeDirectory directory C:\opt\rmis\ax-dropcopy\temp\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22 created
+19:15:23.272 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-191523.zip Moved to Directory C:\opt\rmis\ax-dropcopy\temp\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:22:10.828 INFO  Job ID<> org.jvmscript.file.FileUtility - zipDirectory directory \opt\rmis\ax-dropcopy\temp\ added to C:\opt\rmis\ax-dropcopy\temp\temp.zip zipfile
+19:22:10.878 INFO  Job ID<> org.jvmscript.file.FileUtility - Source File C:\opt\rmis\ax-dropcopy\temp\temp.zip Time Stamped to C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192210.zip
+19:22:10.878 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.zip Moved to File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192210.zip
+19:23:57.789 INFO  Job ID<> org.jvmscript.file.FileUtility - zipDirectory directory \opt\rmis\ax-dropcopy\temp\ added to C:\opt\rmis\ax-dropcopy\temp\temp.zip zipfile
+19:23:57.830 INFO  Job ID<> org.jvmscript.file.FileUtility - Source File C:\opt\rmis\ax-dropcopy\temp\temp.zip Time Stamped to C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192357.zip
+19:23:57.830 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.zip Moved to File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192357.zip
+19:26:14.265 INFO  Job ID<> org.jvmscript.file.FileUtility - Archive File(s) C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192357.zip to C:\opt\rmis\ax-dropcopy\temp\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:26:14.269 INFO  Job ID<> org.jvmscript.file.FileUtility - makeDirectory directory C:\opt\rmis\ax-dropcopy\temp\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22 created
+19:26:14.271 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192357.zip Moved to Directory C:\opt\rmis\ax-dropcopy\temp\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:26:19.843 INFO  Job ID<> org.jvmscript.file.FileUtility - zipDirectory directory \opt\rmis\ax-dropcopy\temp\ added to C:\opt\rmis\ax-dropcopy\temp\temp.zip zipfile
+19:26:19.879 INFO  Job ID<> org.jvmscript.file.FileUtility - Source File C:\opt\rmis\ax-dropcopy\temp\temp.zip Time Stamped to C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192619.zip
+19:26:19.880 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.zip Moved to File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192619.zip
+19:29:09.799 INFO  Job ID<> org.jvmscript.file.FileUtility - Archive File(s) C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192619.zip to \mnt\archive\rmis\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:29:09.801 INFO  Job ID<> org.jvmscript.file.FileUtility - makeDirectory directory \mnt\archive\rmis\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22 created
+19:29:09.801 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192619.zip Moved to Directory \mnt\archive\rmis\\mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:29:48.251 INFO  Job ID<> org.jvmscript.file.FileUtility - zipDirectory directory \opt\rmis\ax-dropcopy\temp\ added to C:\opt\rmis\ax-dropcopy\temp\temp.zip zipfile
+19:29:48.287 INFO  Job ID<> org.jvmscript.file.FileUtility - Source File C:\opt\rmis\ax-dropcopy\temp\temp.zip Time Stamped to C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192948.zip
+19:29:48.288 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.zip Moved to File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192948.zip
+19:30:08.624 INFO  Job ID<> org.jvmscript.file.FileUtility - Archive File(s) C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192948.zip to \mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:30:09.625 INFO  Job ID<> org.jvmscript.file.FileUtility - makeDirectory directory \mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22 created
+19:30:35.569 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-192948.zip Moved to Directory \mnt\archive\rmis\ax-dropcopy\2017-02/2017-02-22
+19:31:47.524 INFO  Job ID<> org.jvmscript.file.FileUtility - zipDirectory directory \opt\rmis\ax-dropcopy\temp\ added to C:\opt\rmis\ax-dropcopy\temp\temp.zip zipfile
+19:31:47.572 INFO  Job ID<> org.jvmscript.file.FileUtility - Source File C:\opt\rmis\ax-dropcopy\temp\temp.zip Time Stamped to C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193147.zip
+19:31:47.573 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.zip Moved to File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193147.zip
+19:31:47.579 INFO  Job ID<> org.jvmscript.file.FileUtility - Archive File(s) C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193147.zip to \mnt\archive\rmis\ax-dropcopy\temp\2017-02/2017-02-22
+19:31:47.581 INFO  Job ID<> org.jvmscript.file.FileUtility - makeDirectory directory \mnt\archive\rmis\ax-dropcopy\temp\2017-02/2017-02-22 created
+19:31:47.584 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193147.zip Moved to Directory \mnt\archive\rmis\ax-dropcopy\temp\2017-02/2017-02-22
+19:38:15.230 INFO  Job ID<> org.jvmscript.file.FileUtility - zipDirectory directory \opt\rmis\ax-dropcopy\temp\ added to C:\opt\rmis\ax-dropcopy\temp\temp.zip zipfile
+19:38:15.281 INFO  Job ID<> org.jvmscript.file.FileUtility - Source File C:\opt\rmis\ax-dropcopy\temp\temp.zip Time Stamped to C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193815.zip
+19:38:15.282 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.zip Moved to File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193815.zip
+19:38:15.288 INFO  Job ID<> org.jvmscript.file.FileUtility - Archive File(s) C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193815.zip to \mnt\archive\rmis\ax-dropcopy\temp\2017-02/2017-02-22
+19:38:15.291 INFO  Job ID<> org.jvmscript.file.FileUtility - makeDirectory directory \mnt\archive\rmis\ax-dropcopy\temp\2017-02/2017-02-22 created
+19:38:15.294 INFO  Job ID<> org.jvmscript.file.FileUtility - File C:\opt\rmis\ax-dropcopy\temp\temp.20170222-193815.zip Moved to Directory \mnt\archive\rmis\ax-dropcopy\temp\2017-02/2017-02-22
