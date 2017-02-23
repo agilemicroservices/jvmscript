@@ -291,13 +291,17 @@ public class FileUtility {
 
     public static String[] archiveFile(String sourceFilename) throws IOException {
 
-        String archiveSubFolder = "archive/" + getDateTimeString("yyyy-MM/yyyy-MM-dd");
-        String destRootPath = getFilePath(sourceFilename);
-        String destFilename = destRootPath + archiveSubFolder;
-        logger.info("Archive File(s) {} to {}", sourceFilename, destFilename);
+        return archiveFile(sourceFilename, "archive");
+    }
 
-        makeDirectory(destFilename);
-        String[] archiveFiles = moveFile(sourceFilename, destFilename);
+    public static String[] archiveFile(String sourceFilename, String archiveDirectory) throws IOException{
+        String archiveSubFolder = archiveDirectory + File.separator + getDateTimeString("yyyy-MM/yyyy-MM-dd");
+        String destRootPath = getFilePath(archiveDirectory);
+        //String destFilename = destRootPath + archiveSubFolder;
+        logger.info("Archive File(s) {} to {}", sourceFilename, archiveSubFolder);
+
+        makeDirectory(archiveSubFolder);
+        String[] archiveFiles = moveFile(sourceFilename, archiveSubFolder);
 
         return archiveFiles;
     }
@@ -395,12 +399,19 @@ public class FileUtility {
 
 
     public static String timeStampFile(String sourceFilename) throws IOException {
+        String timeStampedFileName = getTimeStampFilename(sourceFilename);
+
+        logger.info("Source File {} Time Stamped to {}", sourceFilename, timeStampedFileName);
+        renameFile(sourceFilename, timeStampedFileName);
+        return timeStampedFileName;
+    }
+
+    private static String getTimeStampFilename(String sourceFilename) throws IOException {
         String timeStampedFileName = getFilePath(sourceFilename) +
                 getFileBaseName(sourceFilename) + "." +
                 getDateTimeString() + "." +
                 getFileExtension(sourceFilename);
-        logger.info("Source File {} Time Stamped to {}", sourceFilename, timeStampedFileName);
-        renameFile(sourceFilename, timeStampedFileName);
+
         return timeStampedFileName;
     }
 
@@ -494,7 +505,7 @@ public class FileUtility {
         File directory = new File(directoryName);
 
         if (!directory.isDirectory()) {
-            logger.error("zipDirectory {} is not a directory", directoryName);
+            throw new IOException(directoryName + " is not a directory");
         }
 
         String endPath = directory.getName();
@@ -567,13 +578,21 @@ public class FileUtility {
         }
     }
 
+    public static void archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory) throws Exception{
+        String dateFormat = "yyyy-MM" + File.separator + "yyyy-MM-dd";
+        archiveZipDirectoryWithDate(sourceDirectoryName, targetDirectory, dateFormat);
+
+    }
+
+    public static void archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory, String dateFormat) throws Exception{
+        String zipFilename = zipDirectory(sourceDirectoryName, true);
+        String timeStampedFilename = timeStampFile(zipFilename);
+        archiveFile(timeStampedFilename, targetDirectory);
+        cleanDirectory(sourceDirectoryName);
+    }
+
     public static void main(String[] args) throws Exception {
         String directoryName = "\\opt\\rmis\\ax-dropcopy\\temp\\";
-        String zipFile = zipDirectory(directoryName, true);
-        String[] archiveFile = archiveAndTimeStampFile(zipFile);
-        //cleanDirectory(directoryName);
-        //System.out.println("size = " + archiveFile.length);
-
-        //archiveDirectoryWithDate("\\opt\\rmis\\orbis-dropcopy\\temp", "\\opt\\rmis\\orbis-dropcopy\\archive");
+        archiveZipDirectoryWithDate(directoryName, "\\mnt\\archive\\rmis\\ax-dropcopy\\temp");
     }
 }
