@@ -6,6 +6,7 @@ import net.lingala.zip4j.util.Zip4jConstants;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
@@ -38,7 +39,7 @@ public class FileUtility {
     public static String[] dir(String pathName, boolean recursive) throws IOException{
 
         File directory = new File(getFilePath(pathName));
-        IOFileFilter filter = new WildcardFileFilter(getFileName(pathName));
+        IOFileFilter filter = new WildcardFileFilter(getFileName(pathName), IOCase.INSENSITIVE);
         Collection<File> files;
 
         if (recursive) {
