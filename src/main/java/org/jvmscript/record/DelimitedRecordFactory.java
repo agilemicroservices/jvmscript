@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -101,6 +102,10 @@ public class DelimitedRecordFactory extends RecordFactory {
                                 LocalDateTime localDateTime = (LocalDateTime) object;
                                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
                                 writer.write(localDateTime.format(dtf));
+                            } else if (object.getClass() == Timestamp.class) {
+                                Timestamp timestamp = (Timestamp) object;
+                                DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
+                                writer.write(timestamp.toLocalDateTime().format(dtf));
                             } else {
                                 writer.write(object.toString());
                             }
