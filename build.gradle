@@ -155,14 +155,14 @@ publishing {
         jar(MavenPublication) {
             from components.java
             pom.withXml {
-                asNode().appendNode('description', 'Groovy scripting utility library.')
+                asNode().appendNode('description', 'JVM scripting utility library.')
                 asNode().appendNode('name', rootProject.name)
-                asNode().appendNode('url', 'https://github.com/agilemicroservices/groovyutil')
+                asNode().appendNode('url', 'https://github.com/agilemicroservices/jvmscript')
                 asNode().appendNode('licenses')
                     .appendNode('license')
                         .appendNode('url', 'http://www.apache.org/licenses/LICENSE-2.0.txt')
                 asNode().appendNode('scm')
-                    .appendNode('url', 'https://github.com/agilemicroservices/groovyutil')
+                    .appendNode('url', 'https://github.com/agilemicroservices/jvmscript')
                 asNode().appendNode('developers')
                     .appendNode('developer')
                         .appendNode('id', 'agilemicroservices')
