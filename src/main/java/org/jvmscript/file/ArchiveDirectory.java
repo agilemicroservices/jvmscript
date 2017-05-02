@@ -10,14 +10,14 @@ public class ArchiveDirectory {
 
         cliUtilityInitialize();
         cliAddOption("inputDirectory", true, true);
-        cliAddOption("outputDirectory", true, true);
+        cliAddOption("archiveDirectory", true, true);
 
         cliParse(args);
 
         String inputDirectory = cliGetOptionValue("inputDirectory");
-        String outputDirectory = cliGetOptionValue("outputDirectory");
+        String archiveDirectory = cliGetOptionValue("archiveDirectory");
 
-        archiveZipDirectoryWithDate(inputDirectory, outputDirectory);
+        archiveZipDirectoryWithDate(inputDirectory, archiveDirectory);
 
     }
 }
