@@ -260,6 +260,7 @@ public class HttpUtility
         String requestLine = getRequestLine(url);
         ByteBuf buffer = ByteBufUtil.encodeString(ByteBufAllocator.DEFAULT, CharBuffer.wrap(content), UTF_8);
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, method, requestLine, buffer);
+        request.headers().set(HttpHeaders.Names.CONTENT_LENGTH, buffer.readableBytes());
         request.headers().add(headers);
         addDefaultHeaders(url, request.headers());
         return request;
