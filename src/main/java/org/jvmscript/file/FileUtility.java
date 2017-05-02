@@ -536,7 +536,7 @@ public class FileUtility {
         ZipParameters zipParameters = new ZipParameters();
         zipParameters.setCompressionMethod(Zip4jConstants.COMP_DEFLATE);
         zipParameters.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_NORMAL);
-        zipParameters.setIncludeRootFolder(false);
+        zipParameters.setIncludeRootFolder(true);
         return zipParameters;
     }
 
