@@ -21,7 +21,7 @@ package org.jvmscript.jams;
 import java.util.List;
 
 public class Variable {
-    public List<Ace> acl;
+    public Acl acl;
     public Integer currentLength;
     public String dataType;
     public String description;

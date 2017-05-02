@@ -1,58 +1,441 @@
 package org.jvmscript.http;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.*;
+import io.netty.channel.oio.OioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.oio.OioSocketChannel;
+import io.netty.handler.codec.http.*;
+import io.netty.util.AttributeKey;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.CharBuffer;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class HttpUtility {
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
-    private static final Logger logger = LoggerFactory.getLogger(HttpUtility.class);
 
-    public static void httpDownloadFile(String url) throws Exception {
-        String filename = FilenameUtils.getName(url);
-        httpDownloadFile(url, filename);
+/**
+ * <code>HttpUtility</code> provides methods for uploading and downloading content from an HTTP server.
+ * <p>
+ * The following example prints the content retrieved from <code>www.example.com</code>.
+ * <pre><code>
+ * String str = httpGet("http://www.example.com");
+ * System.out.println(str);
+ * </code></pre>
+ */
+// TODO add ssl/tls support
+public class HttpUtility
+{
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpUtility.class);
+    private static final long DEFAULT_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(15);
+    private static final AttributeKey<Queue<FullHttpResponse>> RESPONSE_QUEUE_KEY = AttributeKey.newInstance("ResponseQueue");
+    private static final AtomicBoolean INITIALIZED = new AtomicBoolean();
+    private static EventLoopGroup eventLoopGroup;
+    private static Bootstrap bootstrap;
+
+
+    /**
+     * Initializes resources used by the utility.  This method is optional provided to allow preallocation of resources
+     * where desirable.
+     */
+    public static void httpInitialize()
+    {
+        if (INITIALIZED.compareAndSet(false, true))
+        {
+            eventLoopGroup = new OioEventLoopGroup();
+            bootstrap = new Bootstrap()
+                    .group(eventLoopGroup)
+                    .channel(OioSocketChannel.class)
+                    .handler(new Initializer());
+        }
     }
 
-    public static void httpDownloadFile(String url, String filename) throws Exception{
-        boolean sucess = false;
-        int cnt = 0;
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        HttpGet httpGet = new HttpGet(url);
-        CloseableHttpResponse response = null;
+    /**
+     * Releases resources used by the utility, must be invoked once the utility is no longer needed.
+     */
+    public static void httpDispose()
+    {
+        try
+        {
+            eventLoopGroup.shutdownGracefully(1, 5, TimeUnit.SECONDS).sync();
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
 
-        do {
-            try {
-                response = httpclient.execute(httpGet);
-                HttpEntity entity = response.getEntity();
 
-                if (entity != null) {
-                    InputStream inputStream = entity.getContent();
-                    OutputStream outputStream = new FileOutputStream(new File(filename));
-                    IOUtils.copy(inputStream, outputStream);
-                    sucess = true;
-                    logger.info("URL {} downloaded to file {}", url, filename);
-                }
+    /**
+     * Sends an HTTP GET request and returns the HTTP response body.  This method is equivalent to invoking
+     * <code>httpGet(String, HttpHeaders)</code> without any headers.
+     *
+     * @param urlString the requested URL.
+     * @return the HTTP response body.
+     */
+    public static String httpGet(String urlString)
+    {
+        return httpGet(urlString, HttpHeaders.EMPTY_HEADERS);
+    }
 
-            } catch (Exception e) {
+    /**
+     * Sends an HTTP GET request and returns the HTTP response body.  This method is equivalent to invoking
+     * <code>httpGet(String, HttpHeaders)</code> with a <code>Map</code> instead of an <code>HttpHeaders</code>
+     * instance.  This method is typically more convenient but doesn't enforce ordering of headers, when ordering is
+     * necessary use an <code>HttpHeaders</code> instance instead.
+     * <p>
+     * The following example illustrates retrieving a web page.
+     * <pre><code>
+     *     Map&lt;String, Object&gt; headers = Collections.singletonMap("Authorization", "myauth");
+     *     String response = httpGet("http://www.example.com", headers);
+     * </code></pre>
+     *
+     * @param urlString the requested URL.
+     * @param headerMap the HTTP headers sent with the request.
+     * @return the HTTP response body.
+     */
+    public static String httpGet(String urlString, Map<String, Object> headerMap)
+    {
+        return httpGet(urlString, toHeaders(headerMap));
+    }
 
-                logger.error("Http Download ERROR = {}", e);
-                Thread.sleep(1000);
+    /**
+     * Sends an HTTP GET request and returns the HTTP response body.
+     * <p>
+     * The following example illustrates retrieving a web page.
+     * <pre><code>
+     *     HttpHeaders headers = new HttpHeaders().add("Authorization", "myauth");
+     *     String response = httpGet("http://www.example.com", headers);
+     * </code></pre>
+     *
+     * @param urlString the requested URL.
+     * @param headers   the HTTP headers sent with the request.
+     * @return the HTTP response body.
+     */
+    public static String httpGet(String urlString, HttpHeaders headers)
+    {
+        URL url = parseUrl(urlString);
+        FullHttpRequest request = createRequest(HttpMethod.GET, url, headers);
+        Channel channel = connect(url);
+        channel.writeAndFlush(request);
+        String responseContent = receiveString(channel);
+
+        LOGGER.info("GET {} completed successfully.", urlString);
+
+        return responseContent;
+    }
+
+
+    public static String httpPost(String urlString, String content)
+    {
+        return httpPost(urlString, content, HttpHeaders.EMPTY_HEADERS);
+    }
+
+    public static String httpPost(String urlString, String content, Map<String, Object> headerMap)
+    {
+        return httpPost(urlString, content, toHeaders(headerMap));
+    }
+
+    public static String httpPost(String urlString, String content, HttpHeaders headers)
+    {
+        URL url = parseUrl(urlString);
+        FullHttpRequest request = createRequestWithString(HttpMethod.POST, url, content, headers);
+        Channel channel = connect(url);
+        channel.writeAndFlush(request);
+        String responseContent = receiveString(channel);
+
+        LOGGER.info("POST {} completed successfully.", urlString);
+
+        return responseContent;
+    }
+
+
+    public static void httpPut(String urlString, String content)
+    {
+        httpPut(urlString, content, HttpHeaders.EMPTY_HEADERS);
+    }
+
+    public static void httpPut(String urlString, String content, Map<String, Object> headerMap)
+    {
+        httpPut(urlString, content, toHeaders(headerMap));
+    }
+
+    public static void httpPut(String urlString, String content, HttpHeaders headers)
+    {
+        URL url = parseUrl(urlString);
+        FullHttpRequest request = createRequestWithString(HttpMethod.PUT, url, content, headers);
+        Channel channel = connect(url);
+        channel.writeAndFlush(request);
+        receive(channel);
+
+        LOGGER.info("PUT {} completed successfully.", urlString);
+    }
+
+
+    public static void httpDelete(String urlString)
+    {
+        httpDelete(urlString, HttpHeaders.EMPTY_HEADERS);
+    }
+
+    public static void httpDelete(String urlString, Map<String, Object> headerMap)
+    {
+        httpDelete(urlString, toHeaders(headerMap));
+    }
+
+    public static void httpDelete(String urlString, HttpHeaders headers)
+    {
+        URL url = parseUrl(urlString);
+        FullHttpRequest request = createRequest(HttpMethod.DELETE, url, headers);
+        Channel channel = connect(url);
+        channel.writeAndFlush(request);
+        receive(channel);
+
+        LOGGER.info("DELETE {} completed successfully.", urlString);
+    }
+
+
+    public static void httpDownload(String urlString)
+    {
+        httpDownload(urlString, FilenameUtils.getName(urlString));
+    }
+
+    public static void httpDownload(String urlString, String fileName)
+    {
+        String content = httpGet(urlString);
+        File file = new File(fileName);
+        try
+        {
+            if (!file.createNewFile())
+            {
+                throw new IllegalArgumentException("File already exists: '" + fileName + "'.");
             }
-            finally {
-                response.close();
+            FileWriter writer = new FileWriter(file);
+            IOUtils.write(content, writer);
+            writer.close();
+
+            LOGGER.info("URL {} downloaded to file {}", urlString, fileName);
+        }
+        catch (FileNotFoundException e)
+        {
+            // never happens
+            throw new IllegalStateException(e);
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException("Unable to write to file: '" + fileName + "'.", e);
+        }
+    }
+
+
+    private static FullHttpRequest createRequest(HttpMethod method, URL url, HttpHeaders headers)
+    {
+        String requestLine = getRequestLine(url);
+        DefaultFullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, method, requestLine);
+        request.headers().add(headers);
+        addDefaultHeaders(url, request.headers());
+        return request;
+    }
+
+    private static FullHttpRequest createRequestWithString(HttpMethod method, URL url, String content, HttpHeaders headers)
+    {
+        String requestLine = getRequestLine(url);
+        ByteBuf buffer = ByteBufUtil.encodeString(ByteBufAllocator.DEFAULT, CharBuffer.wrap(content), UTF_8);
+        DefaultFullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, method, requestLine, buffer);
+        request.headers().add(headers);
+        addDefaultHeaders(url, request.headers());
+        return request;
+    }
+
+    private static void addDefaultHeaders(URL url, HttpHeaders headers)
+    {
+        if (!headers.contains(HttpHeaders.Names.HOST))
+        {
+            int port = url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
+            String headerValue = url.getHost() + ":" + port;
+            headers.add(HttpHeaders.Names.HOST, headerValue);
+        }
+
+        if (!headers.contains(HttpHeaders.Names.CONNECTION))
+        {
+            headers.add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
+        }
+
+        if (!headers.contains(HttpHeaders.Names.ACCEPT_ENCODING))
+        {
+            headers.add(HttpHeaders.Names.ACCEPT_ENCODING,
+                    Arrays.asList(HttpHeaders.Values.GZIP, HttpHeaders.Values.DEFLATE));
+        }
+
+        if (!headers.contains(HttpHeaders.Names.ACCEPT_CHARSET))
+        {
+            headers.add(HttpHeaders.Names.ACCEPT_CHARSET, "UTF-8");
+        }
+    }
+
+    private static String getRequestLine(URL url)
+    {
+        StringBuilder builder = new StringBuilder(url.getPath());
+        String query = url.getQuery();
+        if (null != query)
+        {
+            builder.append('?')
+                    .append(query);
+        }
+        return builder.toString();
+    }
+
+
+    private static Channel connect(URL url)
+    {
+        httpInitialize();
+        try
+        {
+            int port = url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
+            return bootstrap.connect(url.getHost(), port).sync().channel();
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted establishing connection.", e);
+        }
+    }
+
+
+    private static void receive(Channel channel)
+    {
+        receiveResponse(channel).release();
+    }
+
+    private static String receiveString(Channel channel)
+    {
+        String str;
+        FullHttpResponse response = receiveResponse(channel);
+        try
+        {
+            str = response.content().toString(UTF_8);
+        }
+        finally
+        {
+            response.release();
+        }
+        return str;
+    }
+
+    private static FullHttpResponse receiveResponse(Channel channel)
+    {
+        FullHttpResponse response;
+        final long timeoutNanos = System.nanoTime() + DEFAULT_TIMEOUT_NANOS;
+        Queue<FullHttpResponse> responseQueue = channel.attr(RESPONSE_QUEUE_KEY).get();
+        while ((response = responseQueue.poll()) == null)
+        {
+            if (System.nanoTime() > timeoutNanos)
+            {
+                throw new IllegalStateException("Timed out awaiting response.");
             }
 
-        } while (sucess == false && cnt++ < 5);
+            try
+            {
+                Thread.sleep(10);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted awaiting response.", e);
+            }
+        }
+
+        HttpResponseStatus status = response.getStatus();
+        if (!HttpResponseStatus.OK.equals(status) && !HttpResponseStatus.CREATED.equals(status))
+        {
+            throw new IllegalStateException("Unexpected response status " + status + ".");
+        }
+
+        return response;
+    }
+
+
+    private static HttpHeaders toHeaders(Map<String, Object> headerMap)
+    {
+        HttpHeaders headers = new DefaultHttpHeaders();
+        for (String o : headerMap.keySet())
+        {
+            Object value = headerMap.get(o);
+            if (value instanceof Iterable)
+            {
+                headers.add(o, (Iterable<?>) value);
+            }
+            else
+            {
+                headers.add(o, value);
+            }
+        }
+        return headers;
+    }
+
+    private static URL parseUrl(String urlString)
+    {
+        try
+        {
+            return new URL(urlString);
+        }
+        catch (MalformedURLException e)
+        {
+            throw new IllegalArgumentException("Invalid URL.", e);
+        }
+    }
+
+
+    private static final class Initializer extends ChannelInitializer<SocketChannel>
+    {
+
+        @Override
+        protected void initChannel(SocketChannel ch) throws Exception
+        {
+            Queue<FullHttpResponse> responseQueue = new ConcurrentLinkedQueue<>();
+            ch.pipeline()
+                    .addLast(new HttpClientCodec())
+                    .addLast(new HttpContentDecompressor())
+                    .addLast(new HttpObjectAggregator(1048576))
+                    .addLast(new Receiver(responseQueue));
+            ch.attr(RESPONSE_QUEUE_KEY).set(responseQueue);
+        }
+    }
+
+
+    private static final class Receiver extends SimpleChannelInboundHandler<FullHttpResponse>
+    {
+        private Queue<FullHttpResponse> responseQueue;
+
+        Receiver(Queue<FullHttpResponse> responseQueue)
+        {
+            this.responseQueue = responseQueue;
+        }
+
+        @Override
+        protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse msg) throws Exception
+        {
+            responseQueue.add(msg);
+            msg.retain();
+            ctx.close();
+        }
     }
 }
