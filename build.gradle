@@ -115,6 +115,10 @@ dependencies {
         exclude group: 'stax', module: 'stax-api'
     }
 
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.7.4'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.7.4'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.7.4'
+
     compile group: 'org.kie', name: 'kie-api', version: '6.5.0.Final'
     compile group: 'org.kie', name: 'kie-spring', version: '6.5.0.Final'
     compile group: 'org.drools', name: 'drools-compiler', version: '6.5.0.Final'
