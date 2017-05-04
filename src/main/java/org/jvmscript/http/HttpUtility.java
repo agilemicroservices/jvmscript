@@ -43,6 +43,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * </code></pre>
  */
 // TODO add ssl/tls support
+// TODO enforce max redirects
 public class HttpUtility
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpUtility.class);
@@ -137,9 +138,19 @@ public class HttpUtility
         FullHttpRequest request = createRequest(HttpMethod.GET, url, headers);
         Channel channel = connect(url);
         channel.writeAndFlush(request);
-        String responseContent = receiveString(channel);
 
-        LOGGER.info("GET {} completed successfully.", urlString);
+        String responseContent;
+        try
+        {
+            responseContent = receiveString(channel);
+            LOGGER.info("GET {} completed successfully.", urlString);
+        }
+        catch (RedirectedException e)
+        {
+            String location = e.getLocation();
+            LOGGER.info("GET {} redirected to {}.", urlString, location);
+            responseContent = httpGet(location, headers);
+        }
 
         return responseContent;
     }
@@ -365,7 +376,11 @@ public class HttpUtility
         }
 
         HttpResponseStatus status = response.getStatus();
-        if (!HttpResponseStatus.OK.equals(status) && !HttpResponseStatus.CREATED.equals(status))
+        if (HttpResponseStatus.MOVED_PERMANENTLY.equals(status) || HttpResponseStatus.TEMPORARY_REDIRECT.equals(status))
+        {
+            throw new RedirectedException(response.headers().get(HttpHeaders.Names.LOCATION));
+        }
+        else if (!HttpResponseStatus.OK.equals(status) && !HttpResponseStatus.CREATED.equals(status))
         {
             throw new IllegalStateException("Unexpected response status " + status + ".");
         }
@@ -437,6 +452,24 @@ public class HttpUtility
             responseQueue.add(msg);
             msg.retain();
             ctx.close();
+        }
+    }
+
+
+    private static class RedirectedException extends RuntimeException
+    {
+        private String location;
+
+
+        private RedirectedException(String location)
+        {
+            super("Redirected to '" + location + "'.");
+            this.location = location;
+        }
+
+        private String getLocation()
+        {
+            return location;
         }
     }
 }
