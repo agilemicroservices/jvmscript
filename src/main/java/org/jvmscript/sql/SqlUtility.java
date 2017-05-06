@@ -46,6 +46,10 @@ public class SqlUtility {
         connection = sql2o.open();
     }
 
+    public static void setAutoCommit(boolean flag) throws Exception {
+        connection.getJdbcConnection().setAutoCommit(flag);
+    }
+
     public static void addCustomColumnMapping(HashMap<String,String> columnMap) {
         sql2o.setDefaultColumnMappings(columnMap);
     }
@@ -168,6 +172,11 @@ public class SqlUtility {
     public static <T> T sqlFindOne(String sql, Class<T> clazz, Object... params) {
         Query query =  connection.createQueryWithParams(sql, params);
         return query.executeAndFetchFirst(clazz);
+    }
+
+    public static <T> T sqlExecuteScalar(String sql, Class<T> clazz, Object... params) {
+        Query query =  connection.createQueryWithParams(sql, params);
+        return query.executeScalar(clazz);
     }
 
     public static void executeSql(String sqlString, Object... params) throws Exception {
