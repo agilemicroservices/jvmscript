@@ -46,7 +46,7 @@ public class SqlUtility {
         connection = sql2o.open();
     }
 
-    public static void setAutoCommit(boolean flag) throws Exception {
+    public static void sqlSetAutoCommit(boolean flag) throws Exception {
         connection.getJdbcConnection().setAutoCommit(flag);
     }
 
