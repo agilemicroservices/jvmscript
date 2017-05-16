@@ -12,6 +12,7 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jvmscript.datetime.DateTimeUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +20,10 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 
 import static org.jvmscript.datetime.DateTimeUtility.*;
@@ -70,6 +73,15 @@ public class FileUtility {
         String path = FilenameUtils.getFullPath(fullFilename);
         logger.debug("Full filename = {}, path = {}", fullFilename, path);
         return path;
+    }
+
+    public static String getFileDateTime(String fullFilename) throws IOException {
+        Long lastModified = new File(fullFilename).lastModified();
+        return DateFormatUtils.format(lastModified, "yyyy-MM-dd kk:mm:ss.sss z");
+    }
+
+    public static Long getFileSize(String fullFilename) {
+        return FileUtils.sizeOf(new File(fullFilename));
     }
 
     public static String getFileName(String fullFilename) throws IOException {
@@ -593,7 +605,8 @@ public class FileUtility {
     }
 
     public static void main(String[] args) throws Exception {
-        String directoryName = "\\opt\\rmis\\ax-dropcopy\\temp\\";
-        archiveZipDirectoryWithDate(directoryName, "\\mnt\\archive\\rmis\\ax-dropcopy\\temp");
+        logger.info(getFileDateTime("/dev/files.txt"));
+        logger.info("file size = {}", getFileSize("/dev/files.txt"));
+
     }
 }
