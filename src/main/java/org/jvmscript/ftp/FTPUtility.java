@@ -1,6 +1,8 @@
 package org.jvmscript.ftp;
 
 import com.jcraft.jsch.*;
+import com.jcraft.jsch.Logger;
+import org.slf4j.*;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -9,6 +11,8 @@ import java.util.Properties;
 import java.util.Vector;
 
 public class FTPUtility {
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FTPUtility.class);
 
     public static class JschLogger implements Logger {
         static java.util.Hashtable name=new java.util.Hashtable();
@@ -40,35 +44,45 @@ public class FTPUtility {
     }
 
     public static void closeSFtpConnection() {
+        logger.info("FTPUtility.closeSFtpConnection sftpChannel.exit()");
         sftpChannel.exit();
+        logger.info("FTPUtility.closeSFtpConnection session.disconnect()");
         session.disconnect();
     }
 
     public static String pwd() throws SftpException {
-        return sftpChannel.pwd();
+        String pwd = sftpChannel.pwd();
+        logger.info("FTPUtility.pwd = {}", pwd);
+        return pwd;
     }
 
     public static void cd(String remoteDirectory) throws SftpException {
+        logger.info("FTPUtility.cd remoteDirectory = {}", remoteDirectory);
         sftpChannel.cd(remoteDirectory);
     }
 
     public static void lcd(String localDirectory) throws Exception {
+        logger.info("FTPUtility.lcd localDirectory = {}", localDirectory);
         sftpChannel.lcd(localDirectory);
     }
 
     public static void put(String localFile) throws SftpException {
+        logger.info("FTPUtility.put localFile = {}", localFile);
         sftpChannel.put(localFile);
     }
 
     public static void put(String localFile, String remoteFile) throws SftpException {
+        logger.info("FTPUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
         sftpChannel.put(localFile, remoteFile);
     }
 
     public static void get(String remoteFile) throws Exception {
+        logger.info("FTPUtility.get remoteFile = {}", remoteFile);
         sftpChannel.get(remoteFile);
     }
 
     public static void get(String remoteFile, String localFile) throws Exception {
+        logger.info("FTPUtility.get remoteFile = {} localFile = {}", remoteFile, localFile);
         sftpChannel.get(remoteFile, localFile);
     }
 
@@ -109,6 +123,7 @@ public class FTPUtility {
         if (keyFile != null) {
             jsch.addIdentity(keyFile);
         }
+        logger.info("openSFtpConnection server = {} user = {} port = {}", server, user, port);
         session = jsch.getSession(user, server, port);
         session.setConfig("StrictHostKeyChecking", "no");
         session.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
@@ -124,6 +139,7 @@ public class FTPUtility {
     }
 
     public static void sFtpAddIdentity(String inputKeyFile) {
+        logger.info("FTPUtility.sFtpAddIdentity key files = {}", inputKeyFile);
         keyFile = inputKeyFile;
     }
 
@@ -146,6 +162,7 @@ public class FTPUtility {
     }
 
     public static void rm(String filename) throws SftpException {
+        logger.info("FTPUtility.r, filename = {}", filename);
         sftpChannel.rm(filename);
     }
 }

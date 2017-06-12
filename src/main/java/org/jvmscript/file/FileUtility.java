@@ -557,6 +557,12 @@ public class FileUtility {
         return (file.exists() && !file.isDirectory());
     }
 
+    public static boolean fileContentEquals(String filename1, String filename2) throws IOException {
+        File file1 = new File(filename1);
+        File file2 = new File(filename2);
+        return FileUtils.contentEquals(file1, file2);
+    }
+
     public static void copyDirectory(String sourceDirectory, String destDirectory) throws Exception {
         File sourceDir = new File(sourceDirectory);
         File destDir = new File(destDirectory);
@@ -607,6 +613,7 @@ public class FileUtility {
     public static void main(String[] args) throws Exception {
         logger.info(getFileDateTime("/dev/files.txt"));
         logger.info("file size = {}", getFileSize("/dev/files.txt"));
+        copyFile("/dev/files.txt", "/dev/files2.txt");
 
     }
 }

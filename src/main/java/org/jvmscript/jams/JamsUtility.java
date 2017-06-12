@@ -3,6 +3,8 @@ package org.jvmscript.jams;
 import static org.jvmscript.http.HttpUtility.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jvmscript.jams.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +12,9 @@ import java.util.HashMap;
 import java.util.Properties;
 
 public class JamsUtility {
+
+    private static final Logger logger = LoggerFactory.getLogger(JamsUtility.class);
+
     public static String access_token;
     private static ObjectMapper mapper = new ObjectMapper();
     public static String server;
@@ -40,6 +45,8 @@ public class JamsUtility {
 
         HashMap<String, Object> headerMap = new HashMap<String, Object>();
         headerMap.put("Content-Type", "application/json");
+
+        logger.info("JamsUtility.jamsLogin server {} username {}", serverInput, userame);
 
         String loginResponseString = httpPost(url,
                                               mapper.writeValueAsString(login),
@@ -74,6 +81,8 @@ public class JamsUtility {
         HashMap<String, Object> headerMap = new HashMap<String, Object>();
         headerMap.put("Content-Type", "application/json");
         headerMap.put("Authorization", "Bearer " + access_token);
+
+        logger.info("JamsUtility.jamsSetVariable {} to {}", variableName, variableValue);
 
         String url = server + "/jams/api/variable";
         httpPut(url,
