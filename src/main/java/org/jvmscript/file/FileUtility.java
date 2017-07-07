@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import static org.jvmscript.datetime.DateTimeUtility.*;
 
@@ -82,6 +84,23 @@ public class FileUtility {
 
     public static Long getFileSize(String fullFilename) {
         return FileUtils.sizeOf(new File(fullFilename));
+    }
+
+    public static Long fileGetLineCount(String fullFilename) throws Exception {
+        return fileGetLineCount(fullFilename, 0);
+    }
+
+    public static Long fileGetLineCount(String fullFilename, Integer headerLines)  throws Exception {
+
+        Path path = Paths.get(fullFilename);
+        Long lineCount = 0L;
+        try (Stream<String> stream = Files.lines(path)) {
+            lineCount = stream.count();
+            stream.close();
+        }
+        if (lineCount >= headerLines) lineCount = lineCount - headerLines;
+        logger.info("file {} with header count {} has {} lines after subtracting header lines", fullFilename, headerLines, lineCount);
+        return lineCount;
     }
 
     public static String getFileName(String fullFilename) throws IOException {
@@ -267,7 +286,7 @@ public class FileUtility {
             if (destinationFile.isDirectory()) {
                 FileUtils.moveFileToDirectory(sourceFile, destinationFile, true);
                 logger.info("File {} Moved to Directory {}", sourceFilename, destFilename);
-                movedFile[0] = destFilename + getFileName(sourceFilename);
+                movedFile[0] = destFilename + File.separator + getFileName(sourceFilename);
             }
             else {
                 logger.info("File {} Moved to File {}", sourceFilename, destFilename);
@@ -611,9 +630,8 @@ public class FileUtility {
     }
 
     public static void main(String[] args) throws Exception {
-        logger.info(getFileDateTime("/dev/files.txt"));
-        logger.info("file size = {}", getFileSize("/dev/files.txt"));
-        copyFile("/dev/files.txt", "/dev/files2.txt");
-
+        String[] files = archiveFile("/dev/source.txt", "/archive/dev");
+        copyFile(files[0], "/dev/dest.txt");
+        logger.info("files = {}", files.length);
     }
 }
