@@ -36,65 +36,65 @@ public class FTPUtility {
     private static String keyFile = null;
     private static ChannelSftp sftpChannel;
 
-    public static void connectSFtp() throws JSchException {
+    public static void ftpConnect() throws JSchException {
         session.connect();
         Channel channel = session.openChannel("sftp");
         channel.connect();
         sftpChannel = (ChannelSftp) channel;
     }
 
-    public static void closeSFtpConnection() {
+    public static void ftpCloseConnection() {
         logger.info("FTPUtility.closeSFtpConnection sftpChannel.exit()");
         sftpChannel.exit();
         logger.info("FTPUtility.closeSFtpConnection session.disconnect()");
         session.disconnect();
     }
 
-    public static String pwd() throws SftpException {
+    public static String ftpPwd() throws SftpException {
         String pwd = sftpChannel.pwd();
         logger.info("FTPUtility.pwd = {}", pwd);
         return pwd;
     }
 
-    public static void cd(String remoteDirectory) throws SftpException {
+    public static void ftpCd(String remoteDirectory) throws SftpException {
         logger.info("FTPUtility.cd remoteDirectory = {}", remoteDirectory);
         sftpChannel.cd(remoteDirectory);
     }
 
-    public static void lcd(String localDirectory) throws Exception {
+    public static void ftpLcd(String localDirectory) throws Exception {
         logger.info("FTPUtility.lcd localDirectory = {}", localDirectory);
         sftpChannel.lcd(localDirectory);
     }
 
-    public static void put(String localFile) throws SftpException {
+    public static void ftpPut(String localFile) throws SftpException {
         logger.info("FTPUtility.put localFile = {}", localFile);
         sftpChannel.put(localFile);
     }
 
-    public static void put(String localFile, String remoteFile) throws SftpException {
+    public static void ftpPut(String localFile, String remoteFile) throws SftpException {
         logger.info("FTPUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
         sftpChannel.put(localFile, remoteFile);
     }
 
-    public static void get(String remoteFile) throws Exception {
+    public static void ftpGet(String remoteFile) throws Exception {
         logger.info("FTPUtility.get remoteFile = {}", remoteFile);
         sftpChannel.get(remoteFile);
     }
 
-    public static void get(String remoteFile, String localFile) throws Exception {
+    public static void ftpGet(String remoteFile, String localFile) throws Exception {
         logger.info("FTPUtility.get remoteFile = {} localFile = {}", remoteFile, localFile);
         sftpChannel.get(remoteFile, localFile);
     }
 
-    public static String lPwd() {
+    public static String ftpLPwd() {
         return sftpChannel.lpwd();
     }
 
-    public static void openSFtpConnection() throws Exception {
-        openSFtpConnection("application.properties");
+    public static void ftpOpenConnection() throws Exception {
+        ftpOpenConnection("application.properties");
     }
 
-    public static void openSFtpConnection(String propertyFilename) throws Exception {
+    public static void ftpOpenConnection(String propertyFilename) throws Exception {
         Properties properties = new Properties();
         InputStream inputStream = FTPUtility.class.getResourceAsStream("/" + propertyFilename);
         properties.load(inputStream);
@@ -112,10 +112,10 @@ public class FTPUtility {
             ftpPort = new Integer(ftpPortString);
         }
 
-        openSFtpConnection(ftpServer, ftpUser, ftpPassword, ftpPort);
+        ftpOpenConnection(ftpServer, ftpUser, ftpPassword, ftpPort);
     }
 
-    public static void openSFtpConnection(String server, String user, String password, int port) throws Exception {
+    public static void ftpOpenConnection(String server, String user, String password, int port) throws Exception {
 
         JSch.setLogger(new JschLogger());
 
@@ -135,19 +135,19 @@ public class FTPUtility {
             session.setPassword(password);
         }
 
-        connectSFtp();
+        ftpConnect();
     }
 
-    public static void sFtpAddIdentity(String inputKeyFile) {
+    public static void ftpAddIdentity(String inputKeyFile) {
         logger.info("FTPUtility.sFtpAddIdentity key files = {}", inputKeyFile);
         keyFile = inputKeyFile;
     }
 
     public static void openSFtpConnection(String server, String user, String password) throws Exception {
-        openSFtpConnection(server, user, password, 22);
+        ftpOpenConnection(server, user, password, 22);
     }
 
-    public static String[] ls(String fileSpec) throws Exception {
+    public static String[] ftpLs(String fileSpec) throws Exception {
         Vector<ChannelSftp.LsEntry> vector = sftpChannel.ls(fileSpec);
         ArrayList<String> filenames = new ArrayList<String>();
         for (ChannelSftp.LsEntry entry : vector) {
@@ -158,7 +158,7 @@ public class FTPUtility {
     }
 
     public static String[] dir(String fileSpec) throws Exception {
-        return ls(fileSpec);
+        return ftpLs(fileSpec);
     }
 
     public static void rm(String filename) throws SftpException {

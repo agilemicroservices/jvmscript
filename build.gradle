@@ -93,7 +93,7 @@ task wrapper(type: Wrapper) {
 }
 
 dependencies {
-    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.8'
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.12'
 
 
     compile group: 'javax.mail', name: 'javax.mail-api', version: '1.5.6'
