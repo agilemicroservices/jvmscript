@@ -106,10 +106,11 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
     compile group: 'org.apache.commons', name: 'commons-compress', version: '1.12'
     compile group: 'org.apache.commons', name: 'commons-exec', version: '1.3'
+    compile group: 'commons-cli', name: 'commons-cli', version:'1.4'
 
     compile group: 'org.apache.httpcomponents', name: 'httpclient', version:'4.5.2'
     compile group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.2'
-    compile group: 'commons-cli', name: 'commons-cli', version:'1.3.1'
+
     compile group: 'org.apache.poi', name: 'poi', version: '3.15'
     compile (group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15') {
         exclude group: 'stax', module: 'stax-api'
