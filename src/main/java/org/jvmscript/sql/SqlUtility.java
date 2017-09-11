@@ -24,6 +24,7 @@ public class SqlUtility {
     private static Connection connection;
     public static char delimiter = '|';
     public static boolean header = true;
+    public static boolean quoteAllFields = false;
 
     public static void openSqlConnection() throws IOException {
         openSqlConnection("application.properties");
@@ -107,6 +108,7 @@ public class SqlUtility {
         CsvWriterSettings settings = new CsvWriterSettings();
         settings.getFormat().setDelimiter(delimiter);
         settings.setHeaderWritingEnabled(header);
+        settings.setQuoteAllFields(quoteAllFields);
 
         CsvWriter csvWriter = new CsvWriter(fileWriter, settings);
 
