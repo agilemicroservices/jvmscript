@@ -157,11 +157,11 @@ public class FTPUtility {
         return filenames.toArray(new String[0]);
     }
 
-    public static String[] dir(String fileSpec) throws Exception {
+    public static String[] ftpDir(String fileSpec) throws Exception {
         return ftpLs(fileSpec);
     }
 
-    public static void rm(String filename) throws SftpException {
+    public static void ftpRm(String filename) throws SftpException {
         logger.info("FTPUtility.r, filename = {}", filename);
         sftpChannel.rm(filename);
     }
