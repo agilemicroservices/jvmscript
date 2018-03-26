@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -127,6 +128,33 @@ public class FileUtility {
             fileList = ArrayUtils.addAll(fileList, subFileList);
         }
         return fileList;
+    }
+
+    public static void concatFiles(String destinationFilename, String ...soureFiles) throws Exception {
+
+        File outputFile = new File(destinationFilename);
+        FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
+        FileChannel outputFileChannel = fileOutputStream.getChannel();
+
+        long filePosition = 0;
+
+        for(String sourceFilename : soureFiles) {
+            File sourceFile = new File(sourceFilename);
+            FileInputStream fileInputStream = new FileInputStream(sourceFile);
+            FileChannel inputFileChannel = fileInputStream.getChannel();
+
+            outputFileChannel.transferFrom( inputFileChannel,
+                                            filePosition,
+                                            inputFileChannel.size());
+
+            filePosition += inputFileChannel.size();
+
+            inputFileChannel.close();
+            fileInputStream.close();
+        }
+
+        outputFileChannel.close();
+        fileOutputStream.close();
     }
 
     public static String[] copyFile(String sourceFilename, String destFilename) throws IOException{

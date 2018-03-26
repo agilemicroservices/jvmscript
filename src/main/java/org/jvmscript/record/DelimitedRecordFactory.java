@@ -55,7 +55,17 @@ public class DelimitedRecordFactory extends RecordFactory {
                     setBeanField(bean, beanField, beanFieldStringValue);
                 }
                 catch (Exception e) {
-                    logger.error("fieldIdMap.size() = {} line.length = {} lineCnt = {}", idDataFieldIdMap.size(), currentLine.length, lineCnt);
+                    logger.error("Field id {} is invalid\r\n"  +
+                                  "in file {}\r\n" +
+                                  "current line is {}\r\n" +
+                                  "number of data records in object {}  = {}\r\n" +
+                                  "Number of records in line is {}",
+                                  fieldCnt,
+                                  filename,
+                                  lineCnt,
+                                  beanClass.getName(),
+                                  idDataFieldIdMap.size(),
+                                  currentLine.length);
                     throw e;
                 }
 
@@ -72,6 +82,10 @@ public class DelimitedRecordFactory extends RecordFactory {
         BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardCharsets.UTF_8);
 
         try {
+            if (headerIdRows > 0) {
+                outputHeaderIdRow(writer, beanList.get(0).getClass());
+            }
+
             if (headerRows > 0) {
                 outputHeaderRow(writer, beanList.get(0).getClass());
             }
@@ -119,6 +133,21 @@ public class DelimitedRecordFactory extends RecordFactory {
         } finally {
             writer.close();
         }
+    }
+
+    protected void outputHeaderIdRow(BufferedWriter writer, Class beanClass) throws IOException {
+        TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
+
+        boolean first = true;
+        for (BeanField beanField : idDataFieldIdMap.values()) {
+            if (beanField.dataField.output() == true) {
+                if (!first) writer.write(delimiterChar);
+                else first = false;
+
+                writer.write(beanField.dataField.id());
+            }
+        }
+        writer.newLine();
     }
 
     protected void outputHeaderRow(BufferedWriter writer, Class beanClass) throws IOException {
