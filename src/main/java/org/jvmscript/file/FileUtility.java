@@ -366,6 +366,17 @@ public class FileUtility {
         return archiveFiles;
     }
 
+    public static String[] archiveFileCustomDate(String sourceFilename, String archiveDirectory, LocalDateTime localDateTime) throws IOException{
+        String archiveSubFolder = archiveDirectory + File.separator + toStringFromLocalDate(localDateTime.toLocalDate(), "yyyy-MM/yyyy-MM-dd");
+        String destRootPath = getFilePath(archiveDirectory);
+        logger.info("Archive File(s) {} to {}", sourceFilename, archiveSubFolder);
+
+        makeDirectory(archiveSubFolder);
+        String[] archiveFiles = moveFile(sourceFilename, archiveSubFolder);
+
+        return archiveFiles;
+    }
+
 
 
     public static String makeDirectory(String directoryName) throws IOException {
