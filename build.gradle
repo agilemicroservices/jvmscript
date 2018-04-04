@@ -102,7 +102,7 @@ dependencies {
 
     compile group: 'org.agilemicroservices', name: 'agilemicroservices-orm', version: '1.0'
 
-    compile group: 'commons-io', name: 'commons-io', version: '2.5'
+    compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
     compile group: 'org.apache.commons', name: 'commons-compress', version: '1.12'
     compile group: 'org.apache.commons', name: 'commons-exec', version: '1.3'
