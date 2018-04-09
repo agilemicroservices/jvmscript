@@ -144,7 +144,7 @@ public class DelimitedRecordFactory extends RecordFactory {
                 if (!first) writer.write(delimiterChar);
                 else first = false;
 
-                writer.write(beanField.dataField.id());
+                writer.write(Integer.toString(beanField.dataField.id()));
             }
         }
         writer.newLine();
