@@ -2,8 +2,13 @@ package org.jvmscript.log;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public class LogUtility {
+
+    public static void mdcPush(String key, String val) {MDC.put(key, val);}
+
+    public static void mdcClear() {MDC.clear();}
 
     public static Logger Logger = LoggerFactory.getLogger("script.logger");
 
