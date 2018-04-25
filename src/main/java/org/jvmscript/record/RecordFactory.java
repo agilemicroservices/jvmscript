@@ -70,6 +70,9 @@ public class RecordFactory {
             numberString = StringUtils.replace(numberString, "-", "");
             numberString = "-" + numberString;
         }
+        else if (!numberString.startsWith("-")){
+            numberString = StringUtils.replace(numberString, "-", "");
+        }
 
         return numberString;
     }

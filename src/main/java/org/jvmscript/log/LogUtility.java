@@ -5,23 +5,23 @@ import org.slf4j.LoggerFactory;
 
 public class LogUtility {
 
-    private static Logger logger = LoggerFactory.getLogger("script.logger");
+    public static Logger Logger = LoggerFactory.getLogger("script.logger");
 
-    public static void initLogger(String loggerName) {logger = LoggerFactory.getLogger(loggerName);}
+    public static void initLogger(String loggerName) {Logger = LoggerFactory.getLogger(loggerName);}
 
     public static void debug(String logFormatString, Object... args) {
-        logger.debug(logFormatString, args);
+        Logger.debug(logFormatString, args);
     }
 
     public static void info(String logFormatString, Object... args) {
-        logger.info(logFormatString, args);
+        Logger.info(logFormatString, args);
     }
 
     public static void warn(String logFormatString, Object... args) {
-        logger.warn(logFormatString, args);
+        Logger.warn(logFormatString, args);
     }
 
     public static void error(String logFormatString, Object... args) {
-        logger.error(logFormatString, args);
+        Logger.error(logFormatString, args);
     }
 }
