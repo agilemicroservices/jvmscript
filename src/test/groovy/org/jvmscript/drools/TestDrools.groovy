@@ -1,5 +1,6 @@
 package org.jvmscript.drools
 
+import org.junit.Test
 import spock.lang.Specification
 
  class TestDrools extends Specification{
@@ -39,5 +40,26 @@ import spock.lang.Specification
             droolsUtility.insertFact("Reset")
             droolsUtility.runRulesOnce()
     }
+
+
+    def "Testing Sum"() {
+        when:
+        def droolsUtility = new DroolsUtility()
+
+        droolsUtility.addRulesFromFile("drl/SumDecimal.drl")
+        def decimalList = new ArrayList<BigDecimal>()
+        decimalList.add(new BigDecimal("12"))
+        decimalList.add(new BigDecimal("12"))
+        decimalList.add(new BigDecimal("12"))
+
+        droolsUtility.insertFact(decimalList)
+        droolsUtility.runRulesOnce()
+
+
+        then:
+
+            println("sucess")
+    }
+
 
 }

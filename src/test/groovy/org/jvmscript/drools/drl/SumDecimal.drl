@@ -1,0 +1,14 @@
+import java.util.List;
+import java.math.BigDecimal;
+import accumulate org.jvmscript.drools.BigDecimalAccumulator sumbd
+
+rule "SumDecimal"
+    when
+        $decimalList : List()
+        $listSum : BigDecimal()
+            from accumulate($decimal : BigDecimal() from $decimalList,
+                sumbd($decimal)
+            )
+    then
+        System.out.println("sum = " + $listSum);
+end
