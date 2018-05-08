@@ -46,7 +46,7 @@ import spock.lang.Specification
         when:
         def droolsUtility = new DroolsUtility()
 
-        droolsUtility.addRulesFromFile("drl/SumDecimal.drl")
+        droolsUtility.addRuleFromClassPath("SumDecimal.drl")
         def decimalList = new ArrayList<BigDecimal>()
         decimalList.add(new BigDecimal("12"))
         decimalList.add(new BigDecimal("12"))
