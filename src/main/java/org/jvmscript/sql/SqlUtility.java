@@ -15,6 +15,7 @@ import org.sql2o.data.Row;
 import org.sql2o.data.Table;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.*;
 
 
@@ -60,17 +61,17 @@ public class SqlUtility {
     }
 
     public static void exportSqlFileQueryToFile(String sqlQueryFilename, String outputFilename, Object... params) throws Exception {
-        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename));
+        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename), Charset.defaultCharset());
         exportSqlQueryToFile(outputFilename, sqlQuery, params);
     }
 
     public static void exportSqlFileQueryToExcel(String sqlQueryFilename, String outputFilename, Object... params) throws Exception {
-        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename));
+        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename), Charset.defaultCharset());
         exportSqlQueryToExcel(outputFilename, sqlQuery, params);
     }
 
     public static ArrayList<ArrayList<Object>> genericSqlFileQuery(String sqlQueryFilename, Object... params) throws Exception {
-        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename));
+        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename), Charset.defaultCharset());
         return genericSqlQuery(sqlQuery, params);
     }
 
@@ -162,7 +163,7 @@ public class SqlUtility {
     }
 
     public static <T> List<T> executeSqlFileToList(String sqlQueryFilename, Class<T> clazz, Object... params) throws IOException{
-        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename));
+        String sqlQuery = FileUtils.readFileToString(new File(sqlQueryFilename), Charset.defaultCharset());
         return executeSqlToList(sqlQuery, clazz, params);
     }
 
@@ -187,7 +188,7 @@ public class SqlUtility {
     }
 
     public static void executeSqlFile(String sqlFilename, Object... params) throws Exception {
-        String sqlQuery = FileUtils.readFileToString(new File(sqlFilename));
+        String sqlQuery = FileUtils.readFileToString(new File(sqlFilename), Charset.defaultCharset());
         executeSql(sqlQuery, params);
     }
 }

@@ -9,24 +9,24 @@ import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Vector;
 
-public class SFTPUtility {
+public class SftpUtility {
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SFTPUtility.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SftpUtility.class);
 
     public static class JschLogger implements Logger {
         static java.util.Hashtable name=new java.util.Hashtable();
         static{
-            name.put(new Integer(DEBUG), "DEBUG: ");
-            name.put(new Integer(INFO), "INFO: ");
-            name.put(new Integer(WARN), "WARN: ");
-            name.put(new Integer(ERROR), "ERROR: ");
-            name.put(new Integer(FATAL), "FATAL: ");
+            name.put(DEBUG, "DEBUG: ");
+            name.put(INFO, "INFO: ");
+            name.put(WARN, "WARN: ");
+            name.put(ERROR, "ERROR: ");
+            name.put(FATAL, "FATAL: ");
         }
         public boolean isEnabled(int level){
             return true;
         }
         public void log(int level, String message){
-            System.err.print(name.get(new Integer(level)));
+            System.err.print(name.get(Integer.valueOf(level)));
             System.err.println(message);
         }
     }
@@ -43,45 +43,45 @@ public class SFTPUtility {
     }
 
     public static void sFtpCloseConnection() {
-        logger.info("SFTPUtility.closeSFtpConnection sftpChannel.exit()");
+        logger.info("SftpUtility.closeSFtpConnection sftpChannel.exit()");
         sftpChannel.exit();
-        logger.info("SFTPUtility.closeSFtpConnection session.disconnect()");
+        logger.info("SftpUtility.closeSFtpConnection session.disconnect()");
         session.disconnect();
     }
 
     public static String sFtpPwd() throws SftpException {
         String pwd = sftpChannel.pwd();
-        logger.info("SFTPUtility.pwd = {}", pwd);
+        logger.info("SftpUtility.pwd = {}", pwd);
         return pwd;
     }
 
     public static void sFtpCd(String remoteDirectory) throws SftpException {
-        logger.info("SFTPUtility.cd remoteDirectory = {}", remoteDirectory);
+        logger.info("SftpUtility.cd remoteDirectory = {}", remoteDirectory);
         sftpChannel.cd(remoteDirectory);
     }
 
     public static void sFtpLcd(String localDirectory) throws Exception {
-        logger.info("SFTPUtility.lcd localDirectory = {}", localDirectory);
+        logger.info("SftpUtility.lcd localDirectory = {}", localDirectory);
         sftpChannel.lcd(localDirectory);
     }
 
     public static void sFtpPut(String localFile) throws SftpException {
-        logger.info("SFTPUtility.put localFile = {}", localFile);
+        logger.info("SftpUtility.put localFile = {}", localFile);
         sftpChannel.put(localFile);
     }
 
     public static void sFtpPut(String localFile, String remoteFile) throws SftpException {
-        logger.info("SFTPUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
+        logger.info("SftpUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
         sftpChannel.put(localFile, remoteFile);
     }
 
     public static void sFtpGet(String remoteFile) throws Exception {
-        logger.info("SFTPUtility.get remoteFile = {}", remoteFile);
+        logger.info("SftpUtility.get remoteFile = {}", remoteFile);
         sftpChannel.get(remoteFile);
     }
 
     public static void sFtpGet(String remoteFile, String localFile) throws Exception {
-        logger.info("SFTPUtility.get remoteFile = {} localFile = {}", remoteFile, localFile);
+        logger.info("SftpUtility.get remoteFile = {} localFile = {}", remoteFile, localFile);
         sftpChannel.get(remoteFile, localFile);
     }
 
@@ -95,20 +95,20 @@ public class SFTPUtility {
 
     public static void sFtpOpenConnection(String propertyFilename) throws Exception {
         Properties properties = new Properties();
-        InputStream inputStream = SFTPUtility.class.getResourceAsStream("/" + propertyFilename);
+        InputStream inputStream = SftpUtility.class.getResourceAsStream("/" + propertyFilename);
         properties.load(inputStream);
 
-        String ftpServer = properties.getProperty("ftp.server");
-        String ftpUser = properties.getProperty("ftp.user");
-        String ftpPassword = properties.getProperty("ftp.password");
-        String ftpIdentityFile = properties.getProperty("ftp.identity");
-        String ftpPortString = properties.getProperty("ftp.port");
+        String ftpServer = properties.getProperty("sftp.server");
+        String ftpUser = properties.getProperty("sftp.user");
+        String ftpPassword = properties.getProperty("sftp.password");
+        String ftpIdentityFile = properties.getProperty("sftp.identity");
+        String ftpPortString = properties.getProperty("sftp.port");
         keyFile = ftpIdentityFile;
 
         Integer ftpPort = 22;
 
         if (ftpPortString != null) {
-            ftpPort = new Integer(ftpPortString);
+            ftpPort = Integer.valueOf(ftpPortString);
         }
 
         sFtpOpenConnection(ftpServer, ftpUser, ftpPassword, ftpPort);
@@ -138,7 +138,7 @@ public class SFTPUtility {
     }
 
     public static void sFtpAddIdentity(String inputKeyFile) {
-        logger.info("SFTPUtility.sFtpAddIdentity key files = {}", inputKeyFile);
+        logger.info("SftpUtility.sFtpAddIdentity key files = {}", inputKeyFile);
         keyFile = inputKeyFile;
     }
 
@@ -161,7 +161,7 @@ public class SFTPUtility {
     }
 
     public static void ftpRm(String filename) throws SftpException {
-        logger.info("SFTPUtility.r, filename = {}", filename);
+        logger.info("SftpUtility.r, filename = {}", filename);
         sftpChannel.rm(filename);
     }
 }

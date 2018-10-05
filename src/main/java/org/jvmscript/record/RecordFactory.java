@@ -34,7 +34,7 @@ public class RecordFactory {
                     beanField.field.set(bean, value);
                 } else if (beanField.field.getType() == Integer.class) {
                     value = cleanNumberString(value);
-                    beanField.field.set(bean, new Integer(value));
+                    beanField.field.set(bean, Integer.getInteger(value));
                 } else if (beanField.field.getType() == BigDecimal.class) {
                     value = cleanNumberString(value);
                     beanField.field.set(bean, new BigDecimal(value));

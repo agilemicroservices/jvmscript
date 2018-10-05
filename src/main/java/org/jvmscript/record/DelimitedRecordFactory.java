@@ -42,7 +42,7 @@ public class DelimitedRecordFactory extends RecordFactory {
 
         long startTime = System.currentTimeMillis();
         for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
-            T bean = beanClass.newInstance();
+            T bean = beanClass.getDeclaredConstructor().newInstance();
 
             String[] currentLine = lines.get(lineCnt);
             int fieldsToProcess = Math.min(idDataFieldIdMap.size(), currentLine.length);

@@ -7,6 +7,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +32,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
 
     public <T> ArrayList<T> getBeanListFromFixedWidthFile(String filename, Class<T> beanClass) throws Exception {
 
-        List<String> lines = FileUtils.readLines(new File(filename));
+        List<String> lines = FileUtils.readLines(new File(filename), Charset.defaultCharset());
         ArrayList<T> beans = new ArrayList<T>();
 
         for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
@@ -43,7 +45,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
     }
     public <T> T getBeanFromFixedWidthBuffer(String buffer, Class<T> beanClass) throws Exception {
 
-        T bean = beanClass.newInstance();
+        T bean = beanClass.getDeclaredConstructor().newInstance();
         TreeMap<Integer, FixedWidthBeanField> fixedWidthFieldClassMap = getFixedWidthDataFieldMapByClass(beanClass);
 
         for (FixedWidthBeanField fixedWidthBeanField : fixedWidthFieldClassMap.values()) {
@@ -72,7 +74,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
                             throw e;
                         }
                     } else if (fixedWidthBeanField.field.getType() == Integer.class) {
-                        fixedWidthBeanField.field.set(bean, new Integer(cleanNumberString(fieldString)));
+                        fixedWidthBeanField.field.set(bean, Integer.valueOf(cleanNumberString(fieldString)));
                     } else if (fixedWidthBeanField.field.getType() == LocalDate.class) {
                         DateTimeFormatter dtf = DateTimeFormatter.ofPattern(annotation.dateFormat());
                         fixedWidthBeanField.field.set(bean, LocalDate.parse(fieldString, dtf));
@@ -241,7 +243,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
     }
 
     String convertBigDecimalToFixedWidth(BigDecimal bigDecimal, String name, int impliedDecimal, int maxLength) throws Exception {
-        bigDecimal = bigDecimal.setScale(impliedDecimal, BigDecimal.ROUND_HALF_UP);
+        bigDecimal = bigDecimal.setScale(impliedDecimal, RoundingMode.HALF_UP);
         bigDecimal = bigDecimal.multiply(BigDecimal.TEN.pow(impliedDecimal)).setScale(0);
         String bigDecimalString = bigDecimal.toPlainString();
         checkStringLength(bigDecimalString, name, maxLength);
