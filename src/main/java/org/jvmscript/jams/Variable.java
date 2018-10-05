@@ -8,13 +8,13 @@ package org.jvmscript.jams;
    "currentLength": 8,
    "dataType": "Text",
    "description": "IC File",
-   "lastChangedBy": "CORCLEARING\\lferguson.admin",
+   "lastChangedBy": "testuser",
    "lastChangeUTC": "2017-05-02T11:46:13.897Z",
    "parentFolderId": 5,
-   "parentFolderName": "\\Inteliclear",
+   "parentFolderName": "\\ParentFolder",
    "value": "test.txt",
    "variableId": 3,
-   "variableName": "IcFile"
+   "variableName": "InputFile"
 }
  */
 

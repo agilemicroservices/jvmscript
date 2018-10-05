@@ -5,9 +5,6 @@ import org.apache.commons.exec.*;
 
 import java.io.ByteArrayOutputStream;
 
-/**
- * Created by leon.ferguson on 4/11/2017.
- */
 public class ProcessUtility {
 
     public static CommandLine commandLine;

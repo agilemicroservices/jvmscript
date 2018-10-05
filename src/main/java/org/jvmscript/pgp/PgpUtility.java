@@ -63,10 +63,12 @@ public final class PgpUtility {
 
 
     public static void main(String[] args) {
-        final String USER_PUBLIC_KEY = "/Users/mbergin/pgptest/user-pub.asc";
-        final String USER_PRIVATE_KEY = "/Users/mbergin/pgptest/user-priv.asc";
-        final String MASTER_PUBLIC_KEY = "/Users/mbergin/pgptest/master-pub.asc";
-        final String MASTER_PRIVATE_KEY = "/Users/mbergin/pgptest/master-priv.asc";
+
+        final String DIRECTORY = "/tmp/encrypt/";
+        final String USER_PUBLIC_KEY = DIRECTORY + "user-pub.asc";
+        final String USER_PRIVATE_KEY = DIRECTORY + "user-priv.asc";
+        final String MASTER_PUBLIC_KEY = DIRECTORY + "master-pub.asc";
+        final String MASTER_PRIVATE_KEY = DIRECTORY + "pgptest/master-priv.asc";
 
         generateKeyPairFiles(USER_PUBLIC_KEY, USER_PRIVATE_KEY, "johndoe", "secret");
         generateKeyPairFiles(MASTER_PUBLIC_KEY, MASTER_PRIVATE_KEY, "master", "mypass");
