@@ -56,8 +56,10 @@ public class EmailUtility {
         String smtpUser = properties.getProperty("smtp.user");
         String smtpPassword = properties.getProperty("smtp.password");
         String smtpPort = properties.getProperty("smtp.port", "465");
+        String auth = properties.getProperty("smtp.auth", "true");
+        String tls = properties.getProperty("smtp.tls", "true");
 
-        openSmtpConnection(smtpServer, smtpPort, smtpUser, smtpPassword);
+        openSmtpConnection(smtpServer, smtpPort, smtpUser, smtpPassword, auth, tls);
     }
 
     public static void openSmtpConnection(String server, String smtpPort, String user, String password) throws Exception {
@@ -67,6 +69,22 @@ public class EmailUtility {
         props.setProperty("mail.smtp.starttls.enable", "true");
         props.setProperty("mail.smtp.host",server);
         props.setProperty("mail.smtp.from",user);
+
+        session = Session.getDefaultInstance(props, null);
+
+        smtpTransport = session.getTransport();
+        smtpTransport.connect(user, password);
+
+        openSmtpConnection(server, smtpPort, user, password, "true", "true");
+    }
+
+    public static void openSmtpConnection(String server, String smtpPort, String user, String password, String auth, String tls) throws Exception {
+        Properties props = System.getProperties();
+        props.setProperty("mail.smtp.port",smtpPort);
+        props.setProperty("mail.smtp.auth", auth);
+        props.setProperty("mail.smtp.starttls.enable", tls);
+        props.setProperty("mail.smtp.host", server);
+        props.setProperty("mail.smtp.from", user);
 
         session = Session.getDefaultInstance(props, null);
 
@@ -99,11 +117,11 @@ public class EmailUtility {
     }
 
     public static void copyEmailMessageToImapFolder(EmailMessage emailMessage, String folderName) throws MessagingException {
-            Message[] messages = new Message[1];
-            messages[0] = emailMessage.message;
-            Folder archiveFolder = imapStore.getFolder(folderName);
-            if (!archiveFolder.exists()) { archiveFolder.create(Folder.HOLDS_MESSAGES);}
-            imapFolder.copyMessages(messages, archiveFolder);
+        Message[] messages = new Message[1];
+        messages[0] = emailMessage.message;
+        Folder archiveFolder = imapStore.getFolder(folderName);
+        if (!archiveFolder.exists()) { archiveFolder.create(Folder.HOLDS_MESSAGES);}
+        imapFolder.copyMessages(messages, archiveFolder);
     }
 
     public static EmailMessage getFirstEmailMessageInFolder() throws MessagingException {

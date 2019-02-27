@@ -144,8 +144,8 @@ public class FileUtility {
             FileChannel inputFileChannel = fileInputStream.getChannel();
 
             outputFileChannel.transferFrom( inputFileChannel,
-                                            filePosition,
-                                            inputFileChannel.size());
+                    filePosition,
+                    inputFileChannel.size());
 
             filePosition += inputFileChannel.size();
 
@@ -599,9 +599,13 @@ public class FileUtility {
         return zipParameters;
     }
 
-    public static boolean fileExists(String filename) {
-        File file = new File(filename);
-        return (file.exists() && !file.isDirectory());
+    public static boolean fileExists(String filename) throws Exception {
+        if (dir(filename).length > 0) {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     public static boolean fileContentEquals(String filename1, String filename2) throws IOException {
@@ -624,15 +628,15 @@ public class FileUtility {
     public static void archiveDirectoryWithDate(String sourceDirectory, String destDirectory, String dateFormat) throws Exception {
         logger.info("archiveDirectoryWithDate directory {} archive to {}", sourceDirectory, destDirectory);
         String archiveDirectory = destDirectory +
-                                  File.separator +
-                                  DateTimeUtility.getDateString(dateFormat) +
-                                  File.separator;
+                File.separator +
+                DateTimeUtility.getDateString(dateFormat) +
+                File.separator;
 
         Path destDirPath = Paths.get(archiveDirectory);
         Path basePath = new File(sourceDirectory).getParentFile().toPath();
 
         Iterator<File> fileIterator = FileUtils.iterateFiles(new File(sourceDirectory), null, true);
-         while (fileIterator.hasNext()) {
+        while (fileIterator.hasNext()) {
             File file = fileIterator.next();
 
             if (!file.isDirectory()) {
