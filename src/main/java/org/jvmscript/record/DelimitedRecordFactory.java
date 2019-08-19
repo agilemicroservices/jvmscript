@@ -31,6 +31,7 @@ public class DelimitedRecordFactory extends RecordFactory {
     public String lineSeparator = "\r\n";
 
     protected static TreeMap<String, TreeMap> CachedFieldsByClassMap = new TreeMap<String, TreeMap>();
+
 //    todo add support for header column lookup instead of ordinal position.
 //    private static TreeMap<String, TreeMap> BeanFieldClassNameMap = new TreeMap<String, TreeMap>();
 

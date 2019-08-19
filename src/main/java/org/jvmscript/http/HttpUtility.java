@@ -9,12 +9,18 @@ import io.netty.channel.oio.OioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.oio.OioSocketChannel;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.AttributeKey;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -22,7 +28,12 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.CharBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -58,7 +69,7 @@ public class HttpUtility
      * Initializes resources used by the utility.  This method is optional provided to allow preallocation of resources
      * where desirable.
      */
-    public static void httpInitialize()
+    public static void httpInitialize(URL url)
     {
         if (INITIALIZED.compareAndSet(false, true))
         {
@@ -66,7 +77,7 @@ public class HttpUtility
             bootstrap = new Bootstrap()
                     .group(eventLoopGroup)
                     .channel(OioSocketChannel.class)
-                    .handler(new Initializer());
+                    .handler(new Initializer(url));
         }
     }
 
@@ -83,6 +94,8 @@ public class HttpUtility
         {
             Thread.currentThread().interrupt();
         }
+
+        INITIALIZED.set(false);
     }
 
 
@@ -223,15 +236,16 @@ public class HttpUtility
         LOGGER.info("DELETE {} completed successfully.", urlString);
     }
 
-
     public static void httpDownload(String urlString)
     {
         httpDownload(urlString, FilenameUtils.getName(urlString));
     }
+    public static void httpDownload(String urlString, String fileName) {httpDownload(urlString, fileName, HttpHeaders.EMPTY_HEADERS);}
+    public static void httpDownload(String urlString, String fileName, Map<String, Object> headerMap) {httpDownload(urlString, fileName, toHeaders(headerMap));}
 
-    public static void httpDownload(String urlString, String fileName)
+    public static void httpDownload(String urlString, String fileName, HttpHeaders headers)
     {
-        String content = httpGet(urlString);
+        String content = httpGet(urlString, headers);
         File file = new File(fileName);
         try
         {
@@ -318,7 +332,8 @@ public class HttpUtility
 
     private static Channel connect(URL url)
     {
-        httpInitialize();
+        httpInitialize(url);
+
         try
         {
             int port = url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
@@ -419,23 +434,44 @@ public class HttpUtility
         }
     }
 
-
     private static final class Initializer extends ChannelInitializer<SocketChannel>
     {
+
+        private boolean ssl;
+        private String host;
+        private int port;
+
+        Initializer() {
+            ssl = false;
+        }
+
+        Initializer(URL url) {
+            super();
+
+            ssl = url.getProtocol().equalsIgnoreCase("https") ? true : false;
+            host = url.getHost();
+            port = url.getPort();
+        }
 
         @Override
         protected void initChannel(SocketChannel ch) throws Exception
         {
             Queue<FullHttpResponse> responseQueue = new ConcurrentLinkedQueue<>();
+
+            if (ssl) {
+                SslContext sslCtx = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+                ch.pipeline().addLast(sslCtx.newHandler(ch.alloc(), host, port));
+            }
+
             ch.pipeline()
                     .addLast(new HttpClientCodec())
                     .addLast(new HttpContentDecompressor())
-                    .addLast(new HttpObjectAggregator(1048576))
+                    .addLast(new HttpObjectAggregator(5048576))
                     .addLast(new Receiver(responseQueue));
+
             ch.attr(RESPONSE_QUEUE_KEY).set(responseQueue);
         }
     }
-
 
     private static final class Receiver extends SimpleChannelInboundHandler<FullHttpResponse>
     {
@@ -455,11 +491,9 @@ public class HttpUtility
         }
     }
 
-
     private static class RedirectedException extends RuntimeException
     {
         private String location;
-
 
         private RedirectedException(String location)
         {
@@ -471,5 +505,19 @@ public class HttpUtility
         {
             return location;
         }
+    }
+
+    public static void main(String[] args) {
+//        httpDownload("https://eodhistoricaldata.com/api/eod/AAPL.US?api_token=5ba4f642388b79.54975124", "aapl.txt");
+//        httpDownload("https://eodhistoricaldata.com/api/eod/MSFT.US?api_token=5ba4f642388b79.54975124", "msft.txt");
+
+        HashMap<String, Object> headers = new HashMap<>();
+        headers.put("Authorization", "8806ec71-e4b0-4d10-a1cc-492364601a08");
+
+        httpDownload("https://api.orats.io/data/cores/earn?ticker=AAPL", "aapl.txt", headers);
+        httpDispose();
+//
+//        httpDownload("http://www.cboe.com/publish/scheduledtask/mktdata/cboesymboldir2.csv", "cboesymboldir2.csv");
+//        httpDispose();
     }
 }
