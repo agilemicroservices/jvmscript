@@ -18,9 +18,7 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 public class DelimitedRecordFactory extends RecordFactory {
 
@@ -30,10 +28,8 @@ public class DelimitedRecordFactory extends RecordFactory {
     public Character quoteChar = '\t';
     public String lineSeparator = "\r\n";
 
-    protected static TreeMap<String, TreeMap> CachedFieldsByClassMap = new TreeMap<String, TreeMap>();
-
-//    todo add support for header column lookup instead of ordinal position.
-//    private static TreeMap<String, TreeMap> BeanFieldClassNameMap = new TreeMap<String, TreeMap>();
+    protected static TreeMap<String, TreeMap> IdCachedFieldsByClassMap = new TreeMap<String, TreeMap>();
+    protected static TreeMap<String, TreeMap> NameCachedFieldsByClassMap = new TreeMap<String, TreeMap>();
 
     public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass) throws Exception {
         TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
@@ -76,6 +72,62 @@ public class DelimitedRecordFactory extends RecordFactory {
         logger.info("Object Creating Time = {}", System.currentTimeMillis() - startTime);
         return beans;
     }
+
+    public <T> ArrayList<T> getRecordListByHeaderNameFromFile(String filename, Class<T> beanClass) throws Exception {
+        TreeMap<String, BeanField> nameDataFieldIdMap = getNameDataFieldMapByClass(beanClass);
+        List<String[]> lines = parseFileToList(filename);
+
+        ArrayList<T> beans = new ArrayList<T>();
+
+        long startTime = System.currentTimeMillis();
+        String[] headerNameLine = lines.get(headerNameRow);
+        for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
+            T bean = beanClass.newInstance();
+
+            String[] currentLine = lines.get(lineCnt);
+            int fieldsToProcess = Math.min(nameDataFieldIdMap.size(), headerNameLine.length);
+
+            Set<String> keySet = nameDataFieldIdMap.keySet();
+            String[] headerKeys = nameDataFieldIdMap.keySet().toArray(new String[0]);
+
+            HashMap<String, String> lineMap = new HashMap<>();
+            for (int x = 1; x < headerNameLine.length; x++) {
+                lineMap.put(headerNameLine[x], currentLine[x]);
+            }
+
+            int fieldCnt = 0;
+            for (fieldCnt = 0; fieldCnt < fieldsToProcess; fieldCnt++) {
+
+                BeanField beanField;
+                String beanFieldStringValue;
+
+                try {
+                    beanField = nameDataFieldIdMap.get(headerKeys[fieldCnt]);
+                    beanFieldStringValue = lineMap.get(headerKeys[fieldCnt]);
+                    setBeanField(bean, beanField, beanFieldStringValue);
+                }
+                catch (Exception e) {
+                    logger.error("Field name {} is invalid\r\n"  +
+                                    "in file {}\r\n" +
+                                    "current line is {}\r\n" +
+                                    "number of data records in object {}  = {}\r\n" +
+                                    "Number of records in line is {}",
+                            headerNameLine[fieldCnt],
+                            filename,
+                            lineCnt,
+                            beanClass.getName(),
+                            nameDataFieldIdMap.size(),
+                            currentLine.length);
+                    throw e;
+                }
+
+            }
+            beans.add(bean);
+        }
+        logger.info("Object Creating Time = {}", System.currentTimeMillis() - startTime);
+        return beans;
+    }
+
 
     public void writeRecordListToDelimitedFile(String filename, List<? extends Object> beanList) throws IOException {
 
@@ -183,7 +235,7 @@ public class DelimitedRecordFactory extends RecordFactory {
     protected <T> TreeMap<Integer, BeanField> getIdDataFieldMapByClass(Class<T> beanClass ) {
 
         Class clazz = beanClass;
-        TreeMap<Integer, BeanField> idDataFieldIdMap = CachedFieldsByClassMap.get(beanClass.getName());
+        TreeMap<Integer, BeanField> idDataFieldIdMap = IdCachedFieldsByClassMap.get(beanClass.getName());
 
         if (idDataFieldIdMap == null) {
             idDataFieldIdMap = new TreeMap<Integer, BeanField>();
@@ -202,10 +254,36 @@ public class DelimitedRecordFactory extends RecordFactory {
 
             } while (clazz != null);
 
-            CachedFieldsByClassMap.put(beanClass.getName(), idDataFieldIdMap);
+            IdCachedFieldsByClassMap.put(beanClass.getName(), idDataFieldIdMap);
         }
         return idDataFieldIdMap;
+    }
 
+    protected <T> TreeMap<String, BeanField> getNameDataFieldMapByClass(Class<T> beanClass ) {
+
+        Class clazz = beanClass;
+        TreeMap<String, BeanField> nameDataFieldIdMap = NameCachedFieldsByClassMap.get(beanClass.getName());
+
+        if (nameDataFieldIdMap == null) {
+            nameDataFieldIdMap = new TreeMap<String, BeanField>();
+
+            do {
+                for (Field field : clazz.getDeclaredFields()) {
+                    DataField annotation = (DataField) field.getAnnotation(DataField.class);
+                    if (annotation != null) {
+                        BeanField beanField = new BeanField();
+                        beanField.field = field;
+                        beanField.dataField = annotation;
+                        nameDataFieldIdMap.put(annotation.name(), beanField);
+                    }
+                }
+                clazz = clazz.getSuperclass();
+
+            } while (clazz != null);
+
+            IdCachedFieldsByClassMap.put(beanClass.getName(), nameDataFieldIdMap);
+        }
+        return nameDataFieldIdMap;
     }
 
     public int getHeaderRows() {

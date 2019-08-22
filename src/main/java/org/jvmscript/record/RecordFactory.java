@@ -20,6 +20,7 @@ public class RecordFactory {
     public int headerRows = 1;
     public int headerIdRows = 0;
     public int trailerRows = 0;
+    public int headerNameRow = 0;
 
     public static Logger logger = LoggerFactory.getLogger(RecordFactory.class);
 
