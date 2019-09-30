@@ -73,6 +73,51 @@ public class DelimitedRecordFactory extends RecordFactory {
         return beans;
     }
 
+    public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> positionMapping) throws Exception {
+        TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
+        List<String[]> lines = parseFileToList(filename);
+
+        ArrayList<T> beans = new ArrayList<T>();
+
+        long startTime = System.currentTimeMillis();
+        for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
+            T bean = beanClass.newInstance();
+
+            String[] currentLine = lines.get(lineCnt);
+            int fieldsToProcess = Math.min(idDataFieldIdMap.size(), currentLine.length);
+
+            for (int fieldCnt = 0; fieldCnt < positionMapping.size(); fieldCnt++) {
+
+                try {
+                    BeanField beanField = idDataFieldIdMap.get(positionMapping.get(fieldCnt).get(0));
+                    String beanFieldStringValue = currentLine[positionMapping.get(fieldCnt).get(1)];
+                    setBeanField(bean, beanField, beanFieldStringValue);
+                }
+                catch (Exception e) {
+                    logger.error("Field id {} is invalid\r\n"  +
+                                    "in file {}\r\n" +
+                                    "current line is {}\r\n" +
+                                    "number of data records in object {}  = {}\r\n" +
+                                    "Number of records in line is {}",
+                            fieldCnt,
+                            filename,
+                            lineCnt,
+                            beanClass.getName(),
+                            idDataFieldIdMap.size(),
+                            currentLine.length);
+                    throw e;
+                }
+
+            }
+            beans.add(bean);
+        }
+        logger.info("Object Creating Time = {}", System.currentTimeMillis() - startTime);
+        return beans;
+    }
+
+
+
+
     public <T> ArrayList<T> getRecordListByHeaderNameFromFile(String filename, Class<T> beanClass) throws Exception {
         TreeMap<String, BeanField> nameDataFieldIdMap = getNameDataFieldMapByClass(beanClass);
         List<String[]> lines = parseFileToList(filename);
