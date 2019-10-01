@@ -11,16 +11,13 @@ import io.netty.channel.socket.oio.OioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.AttributeKey;
-import io.netty.util.internal.SystemPropertyUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -28,17 +25,13 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.CharBuffer;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import  static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-import  static java.nio.charset.StandardCharsets.UTF_8;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 /**
@@ -60,7 +53,6 @@ public class HttpUtil
     private  final AtomicBoolean INITIALIZED = new AtomicBoolean();
     private  EventLoopGroup eventLoopGroup;
     private  Bootstrap bootstrap;
-
 
     /**
      * Initializes resources used by the utility.  This method is optional provided to allow preallocation of resources
@@ -100,7 +92,6 @@ public class HttpUtil
 
         INITIALIZED.set(false);
     }
-
 
     /**
      * Sends an HTTP GET request and returns the HTTP response body.  This method is equivalent to invoking
@@ -511,16 +502,12 @@ public class HttpUtil
     }
 
     public  void main(String[] args) {
-//        httpDownload("https://eodhistoricaldata.com/api/eod/AAPL.US?api_token=5ba4f642388b79.54975124", "aapl.txt");
-//        httpDownload("https://eodhistoricaldata.com/api/eod/MSFT.US?api_token=5ba4f642388b79.54975124", "msft.txt");
 
         HashMap<String, Object> headers = new HashMap<>();
-        headers.put("Authorization", "8806ec71-e4b0-4d10-a1cc-492364601a08");
+        headers.put("Authorization", "test-header");
 
-        httpDownload("https://api.orats.io/data/cores/earn?ticker=AAPL", "aapl.txt", headers);
+        httpDownload("https://www.testurl.com/info?ticker=AAPL", "aapl.txt", headers);
         httpDispose();
-//
-//        httpDownload("http://www.cboe.com/publish/scheduledtask/mktdata/cboesymboldir2.csv", "cboesymboldir2.csv");
-//        httpDispose();
+
     }
 }

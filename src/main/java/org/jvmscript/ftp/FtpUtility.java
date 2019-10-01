@@ -130,17 +130,5 @@ public class FtpUtility {
     }
 
     public static void main(String[] args) throws Exception {
-        ftpOpenConnection("ftp.exchange-data.net", "Atreyu_FTP", "51665rKL");
-        ftpCd("/Prices/P04/US/");
-        String files[] =  ftpLs(".");
-        logger.info("file list size = {}", files.length);
-        /*
-        String fileSpec = "DAILY_BAR_WITH_FACTORS_US_LISTED_1_20181001_060000.gz";
-        String filename = "/dev/" + fileSpec;
-        ftpGet(fileSpec, filename);
-        ftpCloseConnection();
-        FileUtility.unGzipFile(filename);
-
-         */
     }
 }
