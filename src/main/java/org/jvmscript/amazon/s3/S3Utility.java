@@ -33,18 +33,21 @@ public class S3Utility {
         return s3Util.s3ListBuckets();
     }
 
+    public static boolean s3DoesBucketExist(String bucketName) {
+        return s3Util.s3DoesBucketExist(bucketName);
+    }
+
+    public static void s3CreateFolder(String bucket, String folder) {
+        s3Util.s3CreateFolder(bucket, folder);
+    }
+
+    public static void s3GetFile(String bucket, String folder, String filename, String localFilename) {
+        s3Util.s3GetFile(bucket, folder, filename, localFilename);
+    }
+
     public static void main(String[] args) throws Exception{
         S3Utility.s3OpenConnection();
-
-        //s3Utility.s3CreateBucket("test-3");
-        String[] bucketNameList = S3Utility.s3ListBuckets();
-
-        for (int index = 0; index < bucketNameList.length; index++) {
-            System.out.println(bucketNameList[index]);
-        }
-
-        S3Utility.s3PutFile("risktest-bucket", "test3", "/opt/test.txt");
-
+        S3Utility.s3GetFile("risktest-bucket", "test/t1", "test.txt", "/develop/t.txt");
         S3Utility.s3CloseConnection();
     }
 
