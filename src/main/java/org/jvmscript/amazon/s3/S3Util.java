@@ -74,7 +74,8 @@ public class S3Util {
 
     public void s3CreateFolder(String bucket, String folder) {
 
-        String key = folder + "/";
+
+        String key = folder.endsWith("/") ? folder : folder + "/";
         logger.info("s3CreateFolder bucket = {}, key = {}", bucket, key);
 
         // create empty content
@@ -102,7 +103,8 @@ public class S3Util {
     public void s3PutFile(String bucket, String folder, String filePath) throws Exception{
 
         String filename =  FileUtility.getFileName(filePath);
-        String key = folder + "/" + filename;
+        String key = folder.endsWith("/") ? folder + filename : folder + "/" + filename;
+
         logger.info("s3PutFile bucket = {}, key = {}, filepath = {} filename = {}", bucket, key, filePath, filename);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -115,7 +117,7 @@ public class S3Util {
 
     void s3GetFile(String bucket, String folder, String filename, String localFilename) {
 
-        String key = folder + "/" + filename;
+        String key = folder.endsWith("/") ? folder + filename : folder + "/" + filename;
         logger.info("s3GetFile bucket = {}, key = {}, filename = {} local filename = {}", bucket, key, filename, localFilename);
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
@@ -140,10 +142,5 @@ public class S3Util {
         return bucketExists;
     }
 
-    public static void main(String[] args) throws Exception{
-        S3Util s3Util = new S3Util();
-        s3Util.s3OpenConnection();
-        s3Util.s3GetFile("risktest-bucket", "test/t1", "test.txt", "/develop/t.txt");
-        s3Util.s3CloseConnection();
-    }
+    public static void main(String[] args) throws Exception{}
 }
