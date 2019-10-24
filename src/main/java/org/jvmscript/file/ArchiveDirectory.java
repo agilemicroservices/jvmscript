@@ -5,6 +5,7 @@ import static org.jvmscript.log.LogUtility.initLogger;
 import static org.jvmscript.file.FileUtility.*;
 
 public class ArchiveDirectory {
+
     public static void main(String[] args) throws Exception {
         initLogger("ArchiveDirectory");
 
@@ -18,6 +19,5 @@ public class ArchiveDirectory {
         String archiveDirectory = cliGetOptionValue("archiveDirectory");
 
         archiveZipDirectoryWithDate(inputDirectory, archiveDirectory);
-
     }
 }

@@ -14,7 +14,7 @@ public class FtpUtility {
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FtpUtility.class);
 
     private static FTPClient ftpClient = new FTPClient();
-    private static FTPClientConfig ftpClientConfig = new FTPClientConfig();
+    //private static FTPClientConfig ftpClientConfig = new FTPClientConfig();
 
     public static void ftpCloseConnection() throws Exception {
         if (ftpClient.isConnected()) {

@@ -12,6 +12,7 @@ public class PropertyUtility {
         properties = new Properties();
         InputStream inputStream = PropertyUtility.class.getResourceAsStream("/" + propertyFile);
         properties.load(inputStream);
+        inputStream.close();
     }
 
     public static String getProperty(String propertyName) {

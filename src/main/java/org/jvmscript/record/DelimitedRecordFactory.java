@@ -224,7 +224,7 @@ public class DelimitedRecordFactory extends RecordFactory {
                         }  //not null object
                     } //end annotation for output is true
                 }
-                writer.newLine();
+                writer.write(lineSeparator);
             }
         } catch (Exception e) {
             logger.error("Error = {}", e);
@@ -268,6 +268,7 @@ public class DelimitedRecordFactory extends RecordFactory {
         parserSettings.getFormat().setDelimiter(delimiterChar);
         parserSettings.getFormat().setLineSeparator(lineSeparator);
         parserSettings.getFormat().setQuote(quoteChar);
+        parserSettings.setHeaderExtractionEnabled(false);
         CsvParser parser = new CsvParser(parserSettings);
 
         long startTime = System.currentTimeMillis();
