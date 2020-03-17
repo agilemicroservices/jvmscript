@@ -69,11 +69,19 @@ public class DelimitedRecordFactory extends RecordFactory {
             }
             beans.add(bean);
         }
-        logger.info("Object Creating Time = {}", System.currentTimeMillis() - startTime);
+        logger.debug("Object Creating Time = {}", System.currentTimeMillis() - startTime);
         return beans;
     }
 
-    public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> positionMapping) throws Exception {
+    public <T> ArrayList<T> getRecordListByFieldAndColumnNameFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> psositionMapping) throws Exception {
+        ArrayList<ArrayList<Integer>> positionMapping = new ArrayList<ArrayList<Integer>>();
+
+
+
+        return getRecordListByPositionFromFile(filename, beanClass, positionMapping);
+    }
+
+        public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> positionMapping) throws Exception {
         TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
         List<String[]> lines = parseFileToList(filename);
 
@@ -111,12 +119,9 @@ public class DelimitedRecordFactory extends RecordFactory {
             }
             beans.add(bean);
         }
-        logger.info("Object Creating Time = {}", System.currentTimeMillis() - startTime);
+        logger.debug("Object Creating Time = {}", System.currentTimeMillis() - startTime);
         return beans;
     }
-
-
-
 
     public <T> ArrayList<T> getRecordListByHeaderNameFromFile(String filename, Class<T> beanClass) throws Exception {
         TreeMap<String, BeanField> nameDataFieldIdMap = getNameDataFieldMapByClass(beanClass);
@@ -169,7 +174,7 @@ public class DelimitedRecordFactory extends RecordFactory {
             }
             beans.add(bean);
         }
-        logger.info("Object Creating Time = {}", System.currentTimeMillis() - startTime);
+        logger.debug("Object Creating Time = {}", System.currentTimeMillis() - startTime);
         return beans;
     }
 
@@ -273,7 +278,7 @@ public class DelimitedRecordFactory extends RecordFactory {
 
         long startTime = System.currentTimeMillis();
         List<String[]> lines = parser.parseAll(new FileReader(filename));
-        logger.info("Parse Time = {}",  System.currentTimeMillis()-startTime);
+        logger.debug("Parse Time = {}",  System.currentTimeMillis()-startTime);
 
         return lines;
     }

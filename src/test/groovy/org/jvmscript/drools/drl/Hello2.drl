@@ -1,9 +1,0 @@
-package org.jvmscript.drools.drl;
-dialect  "mvel"
-
-rule "HelloWorld2"
-    when
-        str : String()
-    then
-        System.out.println("HelloWorld2 String = " + str);
-end

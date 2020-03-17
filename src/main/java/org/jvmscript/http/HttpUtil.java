@@ -156,7 +156,9 @@ public class HttpUtil
         {
             String location = e.getLocation();
             LOGGER.info("GET {} redirected to {}.", urlString, location);
-            responseContent = httpGet(location, headers);
+            //responseContent = httpGet(location, headers);
+            httpDispose();
+            responseContent = httpGet(location);
         }
 
         return responseContent;
@@ -289,9 +291,13 @@ public class HttpUtil
     {
         if (!headers.contains(HttpHeaders.Names.HOST))
         {
-            int port = url.getPort() != -1 ? url.getPort() : url.getDefaultPort();
-            String headerValue = url.getHost() + ":" + port;
+            String headerValue = url.getHost();
+            int port = url.getPort();
+            if (port != -1) {
+                headerValue += ":" + port;
+            }
             headers.add(HttpHeaders.Names.HOST, headerValue);
+            System.out.println("HOST=" + headerValue);
         }
 
         if (!headers.contains(HttpHeaders.Names.CONNECTION))
@@ -385,7 +391,7 @@ public class HttpUtil
         }
 
         HttpResponseStatus status = response.getStatus();
-        if (HttpResponseStatus.MOVED_PERMANENTLY.equals(status) || HttpResponseStatus.TEMPORARY_REDIRECT.equals(status))
+        if (HttpResponseStatus.MOVED_PERMANENTLY.equals(status) || HttpResponseStatus.TEMPORARY_REDIRECT.equals(status) || HttpResponseStatus.FOUND.equals(status))
         {
             throw new RedirectedException(response.headers().get(HttpHeaders.Names.LOCATION));
         }
@@ -460,7 +466,7 @@ public class HttpUtil
             ch.pipeline()
                     .addLast(new HttpClientCodec())
                     .addLast(new HttpContentDecompressor())
-                    .addLast(new HttpObjectAggregator(5048576))
+                    .addLast(new HttpObjectAggregator(200*1024*1024))
                     .addLast(new Receiver(responseQueue));
 
             ch.attr(RESPONSE_QUEUE_KEY).set(responseQueue);
@@ -501,13 +507,15 @@ public class HttpUtil
         }
     }
 
-    public  void main(String[] args) {
+    public static void main(String[] args) {
+
+        HttpUtil httpUtil = new HttpUtil();
 
         HashMap<String, Object> headers = new HashMap<>();
-        headers.put("Authorization", "test-header");
+        headers.put("Authorization", "test");
 
-        httpDownload("https://www.testurl.com/info?ticker=AAPL", "aapl.txt", headers);
-        httpDispose();
+        httpUtil.httpDownload("https://api.orats.io/data/strikes/all", "/develop/strikes.csv", headers);
+        httpUtil.httpDispose();
 
     }
 }
