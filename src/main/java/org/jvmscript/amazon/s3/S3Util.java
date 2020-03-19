@@ -26,10 +26,10 @@ public class S3Util {
     }
 
     void s3OpenConnection(String propertyFilename) throws Exception{
-        PropertyUtility.openPropertyFileClassPath(propertyFilename);
-        String accessKeyId = PropertyUtility.getProperty("accessKeyId");
-        String secretAccessKey = PropertyUtility.getProperty("secretAccessKey");
-        String regionName = PropertyUtility.getProperty("region");
+        PropertyUtility.propertyOpenFileClassPath(propertyFilename);
+        String accessKeyId = PropertyUtility.propertyGet("accessKeyId");
+        String secretAccessKey = PropertyUtility.propertyGet("secretAccessKey");
+        String regionName = PropertyUtility.propertyGet("region");
         s3OpenConnection(accessKeyId, secretAccessKey, regionName);
     }
 
