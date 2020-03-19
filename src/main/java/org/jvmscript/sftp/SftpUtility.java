@@ -4,6 +4,8 @@ import com.jcraft.jsch.*;
 import com.jcraft.jsch.Logger;
 import org.slf4j.*;
 
+import static org.jvmscript.property.PropertyUtility.*;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -94,15 +96,13 @@ public class SftpUtility {
     }
 
     public static void sFtpOpenConnection(String propertyFilename) throws Exception {
-        Properties properties = new Properties();
-        InputStream inputStream = SftpUtility.class.getResourceAsStream("/" + propertyFilename);
-        properties.load(inputStream);
+        propertyOpenFileClassPath(propertyFilename);
 
-        String ftpServer = properties.getProperty("sftp.server");
-        String ftpUser = properties.getProperty("sftp.user");
-        String ftpPassword = properties.getProperty("sftp.password");
-        String ftpIdentityFile = properties.getProperty("sftp.identity");
-        String ftpPortString = properties.getProperty("sftp.port");
+        String ftpServer = propertyGet("sftp.server");
+        String ftpUser = propertyGet("sftp.user");
+        String ftpPassword = propertyGet("sftp.password");
+        String ftpIdentityFile = propertyGet("sftp.identity");
+        String ftpPortString = propertyGet("sftp.port");
         keyFile = ftpIdentityFile;
 
         Integer ftpPort = 22;

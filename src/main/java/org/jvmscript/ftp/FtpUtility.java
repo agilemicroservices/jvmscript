@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import static org.jvmscript.property.PropertyUtility.*;
+
 public class FtpUtility {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FtpUtility.class);
@@ -73,14 +75,12 @@ public class FtpUtility {
     }
 
     public static void ftpOpenConnection(String propertyFilename) throws Exception {
-        Properties properties = new Properties();
-        InputStream inputStream = FtpUtility.class.getResourceAsStream("/" + propertyFilename);
-        properties.load(inputStream);
+        propertyOpenFileClassPath(propertyFilename);
 
-        String ftpServer = properties.getProperty("ftp.server");
-        String ftpUser = properties.getProperty("ftp.user");
-        String ftpPassword = properties.getProperty("ftp.password");
-        String ftpPortString = properties.getProperty("ftp.port");
+        String ftpServer = propertyGet("ftp.server");
+        String ftpUser = propertyGet("ftp.user");
+        String ftpPassword = propertyGet("ftp.password");
+        String ftpPortString = propertyGet("ftp.port");
 
         int ftpPort = 21;
 
