@@ -78,8 +78,7 @@ public class SftpUtility {
     }
 
     public static void sFtpGet(String remoteFile) throws Exception {
-        logger.info("SftpUtility.get remoteFile = {}", remoteFile);
-        sftpChannel.get(remoteFile);
+        sFtpGet(remoteFile, remoteFile);
     }
 
     public static void sFtpGet(String remoteFile, String localFile) throws Exception {
