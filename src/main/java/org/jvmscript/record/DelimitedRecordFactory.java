@@ -268,7 +268,7 @@ public class DelimitedRecordFactory extends RecordFactory {
         writer.newLine();
     }
 
-    private List<String[]> parseFileToList(String filename) throws Exception {
+    public List<String[]> parseFileToList(String filename) throws Exception {
         CsvParserSettings parserSettings = new CsvParserSettings();
         parserSettings.getFormat().setDelimiter(delimiterChar);
         parserSettings.getFormat().setLineSeparator(lineSeparator);
