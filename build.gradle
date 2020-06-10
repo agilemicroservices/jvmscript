@@ -134,9 +134,9 @@ dependencies {
     compile group: 'org.sql2o', name: 'sql2o', version: '1.5.4'
 
     // spring
-    compile group: 'org.springframework', name: 'spring-context', version: '5.2.1.RELEASE'
-    compile group: 'org.springframework', name: 'spring-orm', version: '5.2.1.RELEASE'
-    compile group: 'org.springframework.data', name: 'spring-data-jpa', version: '2.2.2.RELEASE'
+//    compile group: 'org.springframework', name: 'spring-context', version: '5.2.1.RELEASE'
+//    compile group: 'org.springframework', name: 'spring-orm', version: '5.2.1.RELEASE'
+//    compile group: 'org.springframework.data', name: 'spring-data-jpa', version: '2.2.2.RELEASE'
 
     compile group: 'io.netty', name: 'netty-all', version: '4.1.36.Final'
 

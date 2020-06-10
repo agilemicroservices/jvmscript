@@ -33,9 +33,12 @@ public class RecordFactory {
 
                 if (beanField.field.getType() == String.class) {
                     beanField.field.set(bean, value);
-                } else if (beanField.field.getType() == Integer.class) {
+                } else if (beanField.field.getType() == Integer.class || beanField.field.getType() == int.class) {
                     value = cleanNumberString(value);
-                    beanField.field.set(bean, new Integer(value));
+                    beanField.field.set(bean, Integer.valueOf(value));
+                } else if (beanField.field.getType() == Double.class || beanField.field.getType() == double.class) {
+                    value = cleanNumberString(value);
+                    beanField.field.set(bean, Double.valueOf(value));
                 } else if (beanField.field.getType() == BigDecimal.class) {
                     value = cleanNumberString(value);
                     beanField.field.set(bean, new BigDecimal(value));
