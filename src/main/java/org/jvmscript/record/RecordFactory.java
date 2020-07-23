@@ -75,7 +75,7 @@ public class RecordFactory {
             numberString = StringUtils.replace(numberString, "-", "");
             numberString = "-" + numberString;
         }
-        else if (numberString.contains("-") &&  !numberString.contains("E-")){
+        else if (!numberString.startsWith("-") && numberString.contains("-") &&  !numberString.contains("E-")){
             numberString = StringUtils.replace(numberString, "-", "");
         }
 
@@ -87,5 +87,6 @@ public class RecordFactory {
 
        System.out.println("clean string = " + factory.cleanNumberString("3.0E-4"));
        System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
+        System.out.println("clean string = " + factory.cleanNumberString("-9999"));
     }
 }
