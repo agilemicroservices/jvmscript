@@ -64,7 +64,8 @@ public class RecordFactory {
             throw e;
         }
     }
-    String cleanNumberString(String numberString) {
+
+    public String cleanNumberString(String numberString) {
 
         numberString = StringUtils.replace(numberString, ",", "");
         numberString = StringUtils.replace(numberString, "$", "");
@@ -74,10 +75,17 @@ public class RecordFactory {
             numberString = StringUtils.replace(numberString, "-", "");
             numberString = "-" + numberString;
         }
-        else if (!numberString.startsWith("-")){
+        else if (numberString.contains("-") &&  !numberString.contains("E-")){
             numberString = StringUtils.replace(numberString, "-", "");
         }
 
         return numberString;
+    }
+
+    public static void main(String[] args) {
+        var factory = new RecordFactory();
+
+       System.out.println("clean string = " + factory.cleanNumberString("3.0E-4"));
+       System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
     }
 }
