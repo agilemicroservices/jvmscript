@@ -83,6 +83,8 @@ public class RecordFactory {
 
         System.out.println("clean string = " + factory.cleanNumberString("3.0E-4"));
         System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
+        System.out.println("clean string = " + factory.cleanNumberString("3.0E-4"));
+        System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
         System.out.println("clean string = " + factory.cleanNumberString("-9999"));
     }
 }
