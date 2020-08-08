@@ -68,8 +68,7 @@ public class SftpUtility {
     }
 
     public static void sFtpPut(String localFile) throws SftpException {
-        logger.info("SftpUtility.put localFile = {}", localFile);
-        sftpChannel.put(localFile);
+        sFtpPut(localFile, localFile);
     }
 
     public static void sFtpPut(String localFile, String remoteFile) throws SftpException {
