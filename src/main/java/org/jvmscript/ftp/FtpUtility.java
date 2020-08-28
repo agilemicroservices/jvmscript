@@ -62,8 +62,13 @@ public class FtpUtility {
         logger.info("FTPUtility.get remoteFile = {} localFile = {}", remoteFile, localFile);
 
         FileOutputStream outputStream = new FileOutputStream(localFile);
-        ftpClient.retrieveFile(remoteFile, outputStream);
+        boolean result = ftpClient.retrieveFile(remoteFile, outputStream);
         outputStream.close();
+
+        if (result == false) {
+            throw new RuntimeException("Could not download " + remoteFile);
+        }
+
     }
 
     public static String ftpLPwd() {
