@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -270,14 +271,19 @@ public class DelimitedRecordFactory extends RecordFactory {
 
     public List<String[]> parseFileToList(String filename) throws Exception {
         CsvParserSettings parserSettings = new CsvParserSettings();
-        parserSettings.getFormat().setDelimiter(delimiterChar);
-        parserSettings.getFormat().setLineSeparator(lineSeparator);
-        parserSettings.getFormat().setQuote(quoteChar);
+        parserSettings.setLineSeparatorDetectionEnabled(true);
+        parserSettings.setDelimiterDetectionEnabled(true, ',', '|');
+        //parserSettings.getFormat().setDelimiter(delimiterChar);
+        //parserSettings.getFormat().setLineSeparator(lineSeparator);
+        //parserSettings.getFormat().setQuote(quoteChar);
+        parserSettings.setAutoConfigurationEnabled(true);
         parserSettings.setHeaderExtractionEnabled(false);
+        parserSettings.setCommentProcessingEnabled(false);
+
         CsvParser parser = new CsvParser(parserSettings);
 
         long startTime = System.currentTimeMillis();
-        List<String[]> lines = parser.parseAll(new FileReader(filename));
+        List<String[]> lines = parser.parseAll(new File(filename));
         logger.debug("Parse Time = {}",  System.currentTimeMillis()-startTime);
 
         return lines;
@@ -367,4 +373,15 @@ public class DelimitedRecordFactory extends RecordFactory {
     public void setLineSeparator(String lineSeparator) {
         this.lineSeparator = lineSeparator;
     }
+
+    public static void main(String[] args) throws Exception{
+        var factory = new DelimitedRecordFactory();
+        factory.setHeaderRows(1);
+
+        var securityList = factory.getRecordListByPositionFromFile("/opt/jobs/historicalrom/data/onetickoutput/stock/AA-013872106-647321-dailybar.csv", OneTickDailyBar.class);
+
+        System.out.println("list size = " + securityList.size());
+
+    }
+
 }
