@@ -374,14 +374,4 @@ public class DelimitedRecordFactory extends RecordFactory {
         this.lineSeparator = lineSeparator;
     }
 
-    public static void main(String[] args) throws Exception{
-        var factory = new DelimitedRecordFactory();
-        factory.setHeaderRows(1);
-
-        var securityList = factory.getRecordListByPositionFromFile("/opt/jobs/historicalrom/data/onetickoutput/stock/AA-013872106-647321-dailybar.csv", OneTickDailyBar.class);
-
-        System.out.println("list size = " + securityList.size());
-
-    }
-
 }
