@@ -1,7 +1,9 @@
 package org.jvmscript.sql;
 
+import com.univocity.parsers.csv.CsvRoutines;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
+import com.univocity.parsers.tsv.TsvWriterSettings;
 import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -15,6 +17,7 @@ import org.sql2o.data.Row;
 import org.sql2o.data.Table;
 
 import java.io.*;
+import java.sql.ResultSet;
 import java.util.*;
 
 
@@ -122,6 +125,17 @@ public class SqlUtility {
 
         csvWriter.close();
         fileWriter.close();
+    }
+
+    public static void sqlExportResultSetToFile(String filename, ResultSet resultSet) {
+        CsvWriterSettings settings = new CsvWriterSettings();
+        settings.getFormat().setDelimiter(delimiter);
+        settings.setHeaderWritingEnabled(header);
+        settings.setQuoteAllFields(quoteAllFields);
+
+        var file = new File(filename);
+        CsvRoutines csvRoutines = new CsvRoutines(settings);
+        csvRoutines.write(resultSet, file);
     }
 
     public static void exportSqlQueryToExcel(String filename, String sqlString, Object... params) throws Exception {

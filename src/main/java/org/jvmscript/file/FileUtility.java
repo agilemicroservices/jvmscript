@@ -576,6 +576,9 @@ public class FileUtility {
         String endPath = directory.getName();
 
         String zipFilename = directory.getAbsolutePath() + File.separator + endPath + ".zip";
+        if (fileExists(zipFilename)) {
+            throw new Exception("Zipfile directory name " + zipFilename + " already exists");
+        }
         ZipFile zipFile = new ZipFile(zipFilename);
 
         if (recursive) {

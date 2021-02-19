@@ -10,6 +10,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -210,6 +212,10 @@ public class DelimitedRecordFactory extends RecordFactory {
                         if (object != null) {
                             if (object.getClass() == BigDecimal.class) {
                                 BigDecimal bigDecimal = (BigDecimal) object;
+                                writer.write(bigDecimal.toPlainString());
+                            } else if (object.getClass() == Double.class || object.getClass() == double.class) {
+                                BigDecimal bigDecimal = new BigDecimal((Double) object);
+                                bigDecimal = bigDecimal.setScale(2, RoundingMode.HALF_UP);
                                 writer.write(bigDecimal.toPlainString());
                             } else if (object.getClass() == LocalDate.class) {
                                 LocalDate localDate = (LocalDate) object;

@@ -38,7 +38,12 @@ public class RecordFactory {
                     beanField.field.set(bean, Integer.valueOf(value));
                 } else if (beanField.field.getType() == Double.class || beanField.field.getType() == double.class) {
                     value = cleanNumberString(value);
-                    beanField.field.set(bean, Double.valueOf(value));
+                    if (value == null && beanField.field.getType() == double.class) {
+                        beanField.field.set(bean, 0.00);
+                    }
+                    else {
+                        beanField.field.set(bean, Double.valueOf(value));
+                    }
                 } else if (beanField.field.getType() == BigDecimal.class) {
                     value = cleanNumberString(value);
                     beanField.field.set(bean, new BigDecimal(value));
@@ -53,7 +58,15 @@ public class RecordFactory {
                     beanField.field.set(bean, object);
                 }
             } else if (beanField.field != null) {
-                beanField.field.set(bean, null);
+                if (beanField.field.getType() == double.class || beanField.field.getType() == float.class) {
+                    beanField.field.set(bean, 0.00);
+                }
+                else if (beanField.field.getType() == int.class) {
+                    beanField.field.set(bean, 0);
+                }
+                else {
+                    beanField.field.set(bean, null);
+                }
             }
             else {
                 throw new Exception("Invalid Field ID " + beanField.dataField.id() + " for class " + bean.getClass().getName());
