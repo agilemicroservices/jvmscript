@@ -95,7 +95,7 @@ public class RecordFactory {
         return numberString;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         var factory = new RecordFactory();
 
        System.out.println("clean string = " + factory.cleanNumberString("3.0E-4"));
