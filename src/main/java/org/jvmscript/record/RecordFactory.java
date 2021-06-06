@@ -44,6 +44,14 @@ public class RecordFactory {
                     else {
                         beanField.field.set(bean, Double.valueOf(value));
                     }
+                } else if (beanField.field.getType() == Float.class || beanField.field.getType() == float.class) {
+                    value = cleanNumberString(value);
+                    if (value == null && beanField.field.getType() == float.class) {
+                        beanField.field.set(bean, 0.00);
+                    }
+                    else {
+                        beanField.field.set(bean, Float.valueOf(value));
+                    }
                 } else if (beanField.field.getType() == BigDecimal.class) {
                     value = cleanNumberString(value);
                     beanField.field.set(bean, new BigDecimal(value));

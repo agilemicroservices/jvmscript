@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 
 public class EmailMessage {
 
@@ -28,8 +29,9 @@ public class EmailMessage {
     Message message;
     Multipart smtpMultipart;
 
-    public void saveAttachmentFiles(String directory) throws Exception {
+    public String[] saveAttachmentFiles(String directory) throws Exception {
 
+        var filenameList = new ArrayList<String>();
         Multipart multipart = null;
         logger.info("Content Type = {}", message.getContent().getClass().toString());
 
@@ -43,15 +45,19 @@ public class EmailMessage {
             if (bodyPart.getFileName() != null) {
 
                 InputStream inputStream = bodyPart.getInputStream();
-                Path target = new File(directory + bodyPart.getFileName()).toPath();
+                String filename = directory + bodyPart.getFileName();
+                filenameList.add(filename);
+                Path target = new File(filename).toPath();
                 Files.copy(inputStream, target);
 
-                logger.info("Attachment Number {} Filename = {} Content Type = {}",
+                logger.info("Attachment Number {} Filename = {} Content Type = {} path = {}",
                         i,
                         bodyPart.getFileName(),
-                        bodyPart.getContentType());
+                        bodyPart.getContentType(),
+                        filename);
             }
         }
+        return filenameList.toArray(new String[0]);
     }
 
     public String getSubject() throws Exception {

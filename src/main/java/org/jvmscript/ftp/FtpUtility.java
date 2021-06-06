@@ -99,6 +99,7 @@ public class FtpUtility {
     public static void ftpOpenConnection(String server, String user, String password, int port) throws Exception {
 
         try {
+            logger.info("FtpUtility.ftpOpenConnection server {} user {} port {}", server, user, port);
             ftpClient.connect(server);
             ftpClient.login(user, password);
 
@@ -108,7 +109,7 @@ public class FtpUtility {
         catch (Exception e) {
             logger.error("FtpUtility.Cannot connect to FTP server {} port {} user {}", server, port, user);
             if (!ftpClient.isConnected()) {
-                throw new IOException("Cannot connect to FTP Server" + server);
+                throw new IOException("Cannot connect to FTP Server " + server);
             }
         }
     }
