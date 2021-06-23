@@ -40,9 +40,12 @@ public class EmailMessage {
         }
 
         for (int i = 0; i < multipart.getCount(); i++) {
-            BodyPart bodyPart = multipart.getBodyPart(i);
+            var bodyPart = (MimeBodyPart) multipart.getBodyPart(i);
 
-            if (bodyPart.getFileName() != null) {
+            var fname = bodyPart.getFileName();
+            var body = bodyPart.getContent();
+
+            if (fname != null) {
 
                 InputStream inputStream = bodyPart.getInputStream();
                 String filename = directory + bodyPart.getFileName();

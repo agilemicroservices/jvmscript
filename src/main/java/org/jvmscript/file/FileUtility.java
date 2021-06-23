@@ -471,7 +471,7 @@ public class FileUtility {
         return timeStampedFileName;
     }
 
-    private static String getTimeStampFilename(String sourceFilename) throws IOException {
+    public static String getTimeStampFilename(String sourceFilename) throws IOException {
         String timeStampedFileName = getFilePath(sourceFilename) +
                 getFileBaseName(sourceFilename) + "." +
                 getDateTimeString() + "." +
