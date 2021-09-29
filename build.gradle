@@ -122,7 +122,7 @@ dependencies {
 
     api group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.1'
     api group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.1'
-    api group: 'org.apache.logging.log4j', name: 'log4j-slf4j18-impl', version: '2.13.1'
+//    api group: 'org.apache.logging.log4j', name: 'log4j-slf4j18-impl', version: '2.13.1'
     api group: 'com.lmax', name: 'disruptor', version: '3.4.0'
 
     api group: 'org.bouncycastle', name: 'bcpg-jdk15on', version: '1.54'
