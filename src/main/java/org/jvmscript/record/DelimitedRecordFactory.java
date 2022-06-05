@@ -2,16 +2,14 @@ package org.jvmscript.record;
 
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,7 +23,7 @@ import java.util.*;
 
 public class DelimitedRecordFactory extends RecordFactory {
 
-    public static Logger logger = LoggerFactory.getLogger(DelimitedRecordFactory.class);
+    private static final Logger logger = LogManager.getLogger(DelimitedRecordFactory.class);
 
     public Character delimiterChar = '|';
     public Character quoteChar = '\t';
@@ -279,9 +277,6 @@ public class DelimitedRecordFactory extends RecordFactory {
         CsvParserSettings parserSettings = new CsvParserSettings();
         parserSettings.setLineSeparatorDetectionEnabled(true);
         parserSettings.setDelimiterDetectionEnabled(true, ',', '|');
-        //parserSettings.getFormat().setDelimiter(delimiterChar);
-        //parserSettings.getFormat().setLineSeparator(lineSeparator);
-        //parserSettings.getFormat().setQuote(quoteChar);
         parserSettings.setAutoConfigurationEnabled(true);
         parserSettings.setHeaderExtractionEnabled(false);
         parserSettings.setCommentProcessingEnabled(false);

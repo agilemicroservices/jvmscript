@@ -1,7 +1,8 @@
 package org.jvmscript.record;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
@@ -22,7 +23,7 @@ public class RecordFactory {
     public int trailerRows = 0;
     public int headerNameRow = 0;
 
-    public static Logger logger = LoggerFactory.getLogger(RecordFactory.class);
+    private static final Logger logger = LogManager.getLogger(RecordFactory.class);
 
     void setBeanField(Object bean, BeanField beanField, String value) throws Exception {
 

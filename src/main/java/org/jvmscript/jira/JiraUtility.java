@@ -19,8 +19,8 @@ import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 
 
 public final class JiraUtility {
-    private static final Logger logger = LoggerFactory.getLogger(JiraUtility.class);
+    private static final Logger logger = LogManager.getLogger(JiraUtility.class);
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static HttpHost jiraHost;
 

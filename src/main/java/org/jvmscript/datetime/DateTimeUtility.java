@@ -1,11 +1,17 @@
 package org.jvmscript.datetime;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jvmscript.cli.CliUtility;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class DateTimeUtility {
+
+    private static final Logger logger = LogManager.getLogger(DateTimeUtility.class);
 
     public static LocalTime toLocalTimeFromString(String timeString, String formatter) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
@@ -49,5 +55,9 @@ public class DateTimeUtility {
     public static String getDateTimeString(String format) {
         LocalDateTime now = LocalDateTime.now();
         return now.format(DateTimeFormatter.ofPattern(format));
+    }
+
+    public static void main(String[] args) {
+        System.out.println(toStringFromLocalDate(LocalDate.now(), "MM-dd-uu"));
     }
 }

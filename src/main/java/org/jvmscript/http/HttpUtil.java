@@ -15,8 +15,8 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.AttributeKey;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,7 +47,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 // TODO enforce max redirects
 public class HttpUtil
 {
-    private  final Logger LOGGER = LoggerFactory.getLogger(HttpUtility.class);
+    private static final Logger logger = LogManager.getLogger(HttpUtil.class);
     private  final long DEFAULT_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(15);
     private  AttributeKey<Queue<FullHttpResponse>> RESPONSE_QUEUE_KEY;
     private  final AtomicBoolean INITIALIZED = new AtomicBoolean();
@@ -150,12 +150,12 @@ public class HttpUtil
         try
         {
             responseContent = receiveString(channel);
-            LOGGER.info("GET {} completed successfully.", urlString);
+            logger.info("GET {} completed successfully.", urlString);
         }
         catch (RedirectedException e)
         {
             String location = e.getLocation();
-            LOGGER.info("GET {} redirected to {}.", urlString, location);
+            logger.info("GET {} redirected to {}.", urlString, location);
             //responseContent = httpGet(location, headers);
             httpDispose();
             responseContent = httpGet(location);
@@ -183,7 +183,7 @@ public class HttpUtil
         channel.writeAndFlush(request);
         String responseContent = receiveString(channel);
 
-        LOGGER.info("POST {} completed successfully.", urlString);
+        logger.info("POST {} completed successfully.", urlString);
 
         return responseContent;
     }
@@ -207,7 +207,7 @@ public class HttpUtil
         channel.writeAndFlush(request);
         receive(channel);
 
-        LOGGER.info("PUT {} completed successfully.", urlString);
+        logger.info("PUT {} completed successfully.", urlString);
     }
 
 
@@ -229,7 +229,7 @@ public class HttpUtil
         channel.writeAndFlush(request);
         receive(channel);
 
-        LOGGER.info("DELETE {} completed successfully.", urlString);
+        logger.info("DELETE {} completed successfully.", urlString);
     }
 
     public  void httpDownload(String urlString)
@@ -253,7 +253,7 @@ public class HttpUtil
             IOUtils.write(content, writer);
             writer.close();
 
-            LOGGER.info("URL {} downloaded to file {}", urlString, fileName);
+            logger.info("URL {} downloaded to file {}", urlString, fileName);
         }
         catch (FileNotFoundException e)
         {

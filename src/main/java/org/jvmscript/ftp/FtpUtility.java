@@ -1,19 +1,20 @@
 package org.jvmscript.ftp;
 
-import org.apache.commons.net.ftp.*;
+import org.apache.commons.net.ftp.FTP;
+import org.apache.commons.net.ftp.FTPClient;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jvmscript.file.FileUtility;
-import org.slf4j.*;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 
-import static org.jvmscript.property.PropertyUtility.*;
+import static org.jvmscript.property.PropertyUtility.propertyGet;
+import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
 
 public class FtpUtility {
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FtpUtility.class);
+    private static final Logger logger = LogManager.getLogger(FtpUtility.class);
 
     private static FTPClient ftpClient = new FTPClient();
     //private static FTPClientConfig ftpClientConfig = new FTPClientConfig();
@@ -37,6 +38,7 @@ public class FtpUtility {
     }
 
     public static void ftpLcd(String localDirectory) throws Exception {
+
         logger.info("FTPUtility.lcd localDirectory = {}", localDirectory);
 
     }
@@ -48,7 +50,13 @@ public class FtpUtility {
 
     public static void ftpPut(String localFile, String remoteFile) throws Exception {
         logger.info("FTPUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
+        FileOutputStream outputStream = new FileOutputStream(localFile);
+        boolean result = ftpClient.retrieveFile(remoteFile, outputStream);
+        outputStream.close();
 
+        if (result == false) {
+            throw new RuntimeException("Could not download " + remoteFile);
+        }
     }
 
     public static void ftpGet(String remoteFile) throws Exception {

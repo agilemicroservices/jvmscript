@@ -1,8 +1,8 @@
 package org.jvmscript.email;
 
 import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 public class EmailMessage {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmailMessage.class);
+    private static final Logger logger = LogManager.getLogger(EmailMessage.class);
 
     Message message;
     Multipart smtpMultipart;

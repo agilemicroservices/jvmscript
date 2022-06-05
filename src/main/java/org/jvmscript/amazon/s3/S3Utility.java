@@ -1,6 +1,12 @@
 package org.jvmscript.amazon.s3;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class S3Utility {
+
+    private static final Logger logger = LogManager.getLogger(S3Utility.class);
+
     private static S3Util s3Util;
 
     public static void s3OpenConnection() throws Exception {

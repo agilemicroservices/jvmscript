@@ -1,8 +1,13 @@
 package org.jvmscript.cli;
 
 import org.apache.commons.cli.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CliUtility {
+
+    private static final Logger logger = LogManager.getLogger(CliUtility.class);
+
     private static Options options;
     private static CommandLineParser commandLineParser;
     private static CommandLine commandLine;

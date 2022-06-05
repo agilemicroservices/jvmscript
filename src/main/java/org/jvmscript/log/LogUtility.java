@@ -2,7 +2,6 @@ package org.jvmscript.log;
 
 import org.apache.logging.log4j.*;
 
-
 public class LogUtility {
 
     public static void mdcPush(String key, String val) {ThreadContext.put(key, val);}

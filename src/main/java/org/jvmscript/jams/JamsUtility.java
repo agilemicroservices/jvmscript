@@ -1,22 +1,23 @@
 package org.jvmscript.jams;
 
-import static org.jvmscript.http.HttpUtility.*;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jvmscript.jams.Variable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Properties;
 
+import static org.jvmscript.http.HttpUtility.*;
+
 public class JamsUtility {
 
-    private static final Logger logger = LoggerFactory.getLogger(JamsUtility.class);
+    private static final Logger logger = LogManager.getLogger(JamsUtility.class);
 
     public static String access_token;
-    private static ObjectMapper mapper = new ObjectMapper();
+    private static ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     public static String server;
 
     public static void jamsLogin() throws IOException {
@@ -33,12 +34,14 @@ public class JamsUtility {
         String user = properties.getProperty("jams.user");
         String password = properties.getProperty("jams.password");
 
+
         jamsLogin(url, user, password);
     }
 
     public static void jamsLogin(String serverInput, String userame, String password) throws IOException {
         server = serverInput;
-        String url = server + "/jams/api/authentication/login";
+        String url = server + "/JAMS/api/authentication/login";
+
         Login login = new Login();
         login.username = userame;
         login.password = password;
@@ -84,9 +87,9 @@ public class JamsUtility {
 
         logger.info("JamsUtility.jamsSetVariable {} to {}", variableName, variableValue);
 
-        String url = server + "/jams/api/variable";
-        httpPut(url,
-                mapper.writeValueAsString(jamsVariable),
+        String url = server + "/JAMS/api/variable/setvalue?name=" + variableName;
+        httpPost(url,
+                mapper.writeValueAsString(variableValue),
                 headerMap);
     }
 

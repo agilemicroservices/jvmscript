@@ -11,28 +11,25 @@ import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jvmscript.datetime.DateTimeUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static org.jvmscript.datetime.DateTimeUtility.*;
+import static org.jvmscript.datetime.DateTimeUtility.getDateTimeString;
 
 public class FileUtility {
-    private static final Logger logger = LoggerFactory.getLogger(FileUtility.class);
+    private static final Logger logger = LogManager.getLogger(FileUtility.class);
 
     public static String[] ls(String pathName) throws IOException {
         return dir(pathName);

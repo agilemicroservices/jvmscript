@@ -2,6 +2,8 @@ package org.jvmscript.record;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -20,6 +22,8 @@ import java.util.List;
 import java.util.TreeMap;
 
 public class FixedWidthRecordFactory extends RecordFactory {
+
+    private static final Logger logger = LogManager.getLogger(FixedWidthRecordFactory.class);
 
     class FixedWidthBeanField {
         Field field;

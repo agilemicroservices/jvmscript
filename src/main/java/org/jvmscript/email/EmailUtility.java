@@ -1,7 +1,7 @@
 package org.jvmscript.email;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.mail.*;
 import javax.mail.internet.MimeMessage;
@@ -10,7 +10,7 @@ import java.util.Properties;
 
 public class EmailUtility {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmailMessage.class);
+    private static final Logger logger = LogManager.getLogger(EmailUtility.class);
 
     private static Folder imapFolder;
     private static Store imapStore;

@@ -1,19 +1,17 @@
 package org.jvmscript.sftp;
 
 import com.jcraft.jsch.*;
-import com.jcraft.jsch.Logger;
-import org.slf4j.*;
+import org.apache.logging.log4j.LogManager;
 
-import static org.jvmscript.property.PropertyUtility.*;
-
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Properties;
 import java.util.Vector;
+
+import static org.jvmscript.property.PropertyUtility.propertyGet;
+import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
 
 public class SftpUtility {
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SftpUtility.class);
+    private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(SftpUtility.class);
 
     public static class JschLogger implements Logger {
         static java.util.Hashtable name=new java.util.Hashtable();
@@ -28,8 +26,25 @@ public class SftpUtility {
             return true;
         }
         public void log(int level, String message){
-            System.err.print(name.get(Integer.valueOf(level)));
-            System.err.println(message);
+
+            switch (level) {
+                case 0:
+                    logger.debug("{}", message);
+                    break;
+                case 1:
+                    logger.info("{}", message);
+                    break;
+                case 2:
+                    logger.warn("{}", message);
+                    break;
+                case 3:
+                case 4:
+                    logger.error("{}", message);
+                    break;
+                default:
+                    logger.info("level {} {}", level, message);
+                    break;
+            }
         }
     }
 
@@ -159,7 +174,7 @@ public class SftpUtility {
     }
 
     public static void ftpRm(String filename) throws SftpException {
-        logger.info("SftpUtility.r, filename = {}", filename);
+        logger.info("SftpUtility.ftpRm, filename = {}", filename);
         sftpChannel.rm(filename);
     }
 }
