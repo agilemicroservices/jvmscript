@@ -21,6 +21,8 @@ import java.sql.ResultSet;
 import java.util.*;
 
 
+// sql syntax for parameters
+// where field1 = :p1 AND field2 = :p2
 public class SqlUtility {
 
     private static Sql2o sql2o;
