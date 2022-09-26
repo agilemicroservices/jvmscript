@@ -31,6 +31,8 @@ public class SqlUtility {
     public static boolean header = true;
     public static boolean quoteAllFields = false;
 
+    public static String nullValue = "";
+
     public static void openSqlConnection() throws IOException {
         openSqlConnection("application.properties");
     }
@@ -114,6 +116,7 @@ public class SqlUtility {
         settings.getFormat().setDelimiter(delimiter);
         settings.setHeaderWritingEnabled(header);
         settings.setQuoteAllFields(quoteAllFields);
+        settings.setNullValue(nullValue);
 
         CsvWriter csvWriter = new CsvWriter(fileWriter, settings);
 

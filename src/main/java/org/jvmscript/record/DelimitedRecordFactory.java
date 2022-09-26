@@ -26,8 +26,10 @@ public class DelimitedRecordFactory extends RecordFactory {
     private static final Logger logger = LogManager.getLogger(DelimitedRecordFactory.class);
 
     public Character delimiterChar = '|';
-    public Character quoteChar = '\t';
+    public Character quoteChar = null;
     public String lineSeparator = "\r\n";
+
+    public int decimalPlaces = 4;
 
     protected static TreeMap<String, TreeMap> IdCachedFieldsByClassMap = new TreeMap<String, TreeMap>();
     protected static TreeMap<String, TreeMap> NameCachedFieldsByClassMap = new TreeMap<String, TreeMap>();
@@ -211,10 +213,11 @@ public class DelimitedRecordFactory extends RecordFactory {
                         if (object != null) {
                             if (object.getClass() == BigDecimal.class) {
                                 BigDecimal bigDecimal = (BigDecimal) object;
+                                bigDecimal = bigDecimal.setScale(decimalPlaces, RoundingMode.HALF_UP);
                                 writer.write(bigDecimal.toPlainString());
                             } else if (object.getClass() == Double.class || object.getClass() == double.class) {
                                 BigDecimal bigDecimal = new BigDecimal((Double) object);
-                                bigDecimal = bigDecimal.setScale(2, RoundingMode.HALF_UP);
+                                bigDecimal = bigDecimal.setScale(decimalPlaces, RoundingMode.HALF_UP);
                                 writer.write(bigDecimal.toPlainString());
                             } else if (object.getClass() == LocalDate.class) {
                                 LocalDate localDate = (LocalDate) object;
@@ -228,6 +231,10 @@ public class DelimitedRecordFactory extends RecordFactory {
                                 Timestamp timestamp = (Timestamp) object;
                                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
                                 writer.write(timestamp.toLocalDateTime().format(dtf));
+                            } else if (object.getClass() == String.class) {
+                                if (quoteChar != null) writer.write(quoteChar);
+                                writer.write(object.toString());
+                                if (quoteChar != null) writer.write(quoteChar);
                             } else {
                                 writer.write(object.toString());
                             }
