@@ -12,12 +12,15 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
+import org.sql2o.converters.Converter;
 import org.sql2o.data.Column;
 import org.sql2o.data.Row;
 import org.sql2o.data.Table;
+import org.sql2o.quirks.NoQuirks;
 
 import java.io.*;
 import java.sql.ResultSet;
+import java.time.LocalDate;
 import java.util.*;
 
 
@@ -50,7 +53,10 @@ public class SqlUtility {
     }
 
     public static void openSqlConnection(String dbUrl, String user, String password) {
-        sql2o = new Sql2o(dbUrl, user, password);
+        final Map<Class, Converter> mappers = new HashMap<>();
+        mappers.put(LocalDate.class, new LocalDateConverter());
+
+        sql2o = new Sql2o(dbUrl, user, password, new NoQuirks((mappers)));
         connection = sql2o.open();
     }
 
