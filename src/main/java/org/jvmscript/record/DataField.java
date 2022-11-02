@@ -13,6 +13,9 @@ public @interface DataField {
 	boolean output() default true;
 	boolean input() default true;
 	String dateFormat() default "yyyyMMdd";
+
+	boolean round() default false;
+	int scale() default 6;
 }
 
 

@@ -29,8 +29,6 @@ public class DelimitedRecordFactory extends RecordFactory {
     public Character quoteChar = null;
     public String lineSeparator = "\r\n";
 
-    public int decimalPlaces = 4;
-
     protected static TreeMap<String, TreeMap> IdCachedFieldsByClassMap = new TreeMap<String, TreeMap>();
     protected static TreeMap<String, TreeMap> NameCachedFieldsByClassMap = new TreeMap<String, TreeMap>();
 
@@ -213,11 +211,16 @@ public class DelimitedRecordFactory extends RecordFactory {
                         if (object != null) {
                             if (object.getClass() == BigDecimal.class) {
                                 BigDecimal bigDecimal = (BigDecimal) object;
-                                bigDecimal = bigDecimal.setScale(decimalPlaces, RoundingMode.HALF_UP);
+                                if (beanField.dataField.round() == true) {
+                                    bigDecimal = bigDecimal.setScale(beanField.dataField.scale(), RoundingMode.HALF_UP);
+                                }
+
                                 writer.write(bigDecimal.toPlainString());
                             } else if (object.getClass() == Double.class || object.getClass() == double.class) {
                                 BigDecimal bigDecimal = new BigDecimal((Double) object);
-                                bigDecimal = bigDecimal.setScale(decimalPlaces, RoundingMode.HALF_UP);
+                                if (beanField.dataField.round() == true) {
+                                    bigDecimal = bigDecimal.setScale(beanField.dataField.scale(), RoundingMode.HALF_UP);
+                                }
                                 writer.write(bigDecimal.toPlainString());
                             } else if (object.getClass() == LocalDate.class) {
                                 LocalDate localDate = (LocalDate) object;
