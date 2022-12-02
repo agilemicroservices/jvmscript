@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 
 public class DelimitedRecordFactory extends RecordFactory {
 
@@ -45,11 +46,10 @@ public class DelimitedRecordFactory extends RecordFactory {
             String[] currentLine = lines.get(lineCnt);
             int fieldsToProcess = Math.min(idDataFieldIdMap.size(), currentLine.length);
 
-            for (int fieldCnt = 0; fieldCnt < fieldsToProcess; fieldCnt++) {
+            for (var beanField : idDataFieldIdMap.values()) {
 
                 try {
-                    BeanField beanField = idDataFieldIdMap.get(fieldCnt);
-                    String beanFieldStringValue = currentLine[fieldCnt];
+                    String beanFieldStringValue = currentLine[beanField.dataField.id()];
                     setBeanField(bean, beanField, beanFieldStringValue);
                 }
                 catch (Exception e) {
@@ -58,7 +58,7 @@ public class DelimitedRecordFactory extends RecordFactory {
                                   "current line is {}\r\n" +
                                   "number of data records in object {}  = {}\r\n" +
                                   "Number of records in line is {}",
-                                  fieldCnt,
+                                  beanField.dataField.id(),
                                   filename,
                                   lineCnt,
                                   beanClass.getName(),
@@ -73,6 +73,49 @@ public class DelimitedRecordFactory extends RecordFactory {
         logger.debug("Object Creating Time = {}", System.currentTimeMillis() - startTime);
         return beans;
     }
+    public <K, V> HashMap<K,V> getRecordMapByPositionFromFile(String filename, Class<V> beanClass, Function methodFunction) throws Exception {
+
+        TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
+        List<String[]> lines = parseFileToList(filename);
+
+        HashMap<K, V> beans = new HashMap<K, V>();
+
+        long startTime = System.currentTimeMillis();
+        for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
+            V bean = beanClass.newInstance();
+
+            String[] currentLine = lines.get(lineCnt);
+            int fieldsToProcess = Math.min(idDataFieldIdMap.size(), currentLine.length);
+
+            for (var beanField : idDataFieldIdMap.values()) {
+
+                try {
+                    String beanFieldStringValue = currentLine[beanField.dataField.id()];
+                    setBeanField(bean, beanField, beanFieldStringValue);
+                }
+                catch (Exception e) {
+                    logger.error("Field id {} is invalid\r\n"  +
+                                    "in file {}\r\n" +
+                                    "current line is {}\r\n" +
+                                    "number of data records in object {}  = {}\r\n" +
+                                    "Number of records in line is {}",
+                            beanField.dataField.id(),
+                            filename,
+                            lineCnt,
+                            beanClass.getName(),
+                            idDataFieldIdMap.size(),
+                            currentLine.length);
+                    throw e;
+                }
+
+            }
+
+            var key = (K) methodFunction.apply(bean);
+            beans.put(key, bean);
+        }
+        logger.debug("Object Creating Time = {}", System.currentTimeMillis() - startTime);
+        return beans;
+    }
 
     public <T> ArrayList<T> getRecordListByFieldAndColumnNameFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> psositionMapping) throws Exception {
         ArrayList<ArrayList<Integer>> positionMapping = new ArrayList<ArrayList<Integer>>();
@@ -82,7 +125,7 @@ public class DelimitedRecordFactory extends RecordFactory {
         return getRecordListByPositionFromFile(filename, beanClass, positionMapping);
     }
 
-        public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> positionMapping) throws Exception {
+    public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> positionMapping) throws Exception {
         TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
         List<String[]> lines = parseFileToList(filename);
 
@@ -174,6 +217,62 @@ public class DelimitedRecordFactory extends RecordFactory {
 
             }
             beans.add(bean);
+        }
+        logger.debug("Object Creating Time = {}", System.currentTimeMillis() - startTime);
+        return beans;
+    }
+
+    public <K, V> HashMap<K,V> getRecordMapByHeaderNameFromFile(String filename, Class<V> beanClass, Function methodFunction) throws Exception {
+        TreeMap<String, BeanField> nameDataFieldIdMap = getNameDataFieldMapByClass(beanClass);
+        List<String[]> lines = parseFileToList(filename);
+
+        HashMap<K, V> beans = new HashMap<K, V>();
+
+        long startTime = System.currentTimeMillis();
+        String[] headerNameLine = lines.get(headerNameRow);
+        for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
+            V bean = beanClass.newInstance();
+
+            String[] currentLine = lines.get(lineCnt);
+            int fieldsToProcess = Math.min(nameDataFieldIdMap.size(), headerNameLine.length);
+
+            Set<String> keySet = nameDataFieldIdMap.keySet();
+            String[] headerKeys = nameDataFieldIdMap.keySet().toArray(new String[0]);
+
+            HashMap<String, String> lineMap = new HashMap<>();
+            for (int x = 1; x < headerNameLine.length; x++) {
+                lineMap.put(headerNameLine[x], currentLine[x]);
+            }
+
+            int fieldCnt = 0;
+            for (fieldCnt = 0; fieldCnt < fieldsToProcess; fieldCnt++) {
+
+                BeanField beanField;
+                String beanFieldStringValue;
+
+                try {
+                    beanField = nameDataFieldIdMap.get(headerKeys[fieldCnt]);
+                    beanFieldStringValue = lineMap.get(headerKeys[fieldCnt]);
+                    setBeanField(bean, beanField, beanFieldStringValue);
+                }
+                catch (Exception e) {
+                    logger.error("Field name {} is invalid\r\n"  +
+                                    "in file {}\r\n" +
+                                    "current line is {}\r\n" +
+                                    "number of data records in object {}  = {}\r\n" +
+                                    "Number of records in line is {}",
+                            headerNameLine[fieldCnt],
+                            filename,
+                            lineCnt,
+                            beanClass.getName(),
+                            nameDataFieldIdMap.size(),
+                            currentLine.length);
+                    throw e;
+                }
+
+            }
+            var key = (K) methodFunction.apply(bean);
+            beans.put(key, bean);
         }
         logger.debug("Object Creating Time = {}", System.currentTimeMillis() - startTime);
         return beans;
@@ -384,5 +483,4 @@ public class DelimitedRecordFactory extends RecordFactory {
     public void setLineSeparator(String lineSeparator) {
         this.lineSeparator = lineSeparator;
     }
-
 }
