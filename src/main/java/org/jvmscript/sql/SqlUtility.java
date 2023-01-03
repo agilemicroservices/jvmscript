@@ -19,6 +19,7 @@ import org.sql2o.data.Table;
 import org.sql2o.quirks.NoQuirks;
 
 import java.io.*;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.*;
@@ -62,6 +63,15 @@ public class SqlUtility {
 
     public static void sqlSetAutoCommit(boolean flag) throws Exception {
         connection.getJdbcConnection().setAutoCommit(flag);
+    }
+
+    public PreparedStatement sqlPreparedStatement(String sql) throws Exception {
+        var preparedStatement = connection.getJdbcConnection().prepareStatement(sql);
+        return preparedStatement;
+    }
+
+    public static void sqlCommit() {
+        connection.commit();
     }
 
     public static void addCustomColumnMapping(HashMap<String,String> columnMap) {
@@ -123,6 +133,7 @@ public class SqlUtility {
         settings.setHeaderWritingEnabled(header);
         settings.setQuoteAllFields(quoteAllFields);
         settings.setNullValue(nullValue);
+        settings.setQuotationTriggers(',');
 
         CsvWriter csvWriter = new CsvWriter(fileWriter, settings);
 
