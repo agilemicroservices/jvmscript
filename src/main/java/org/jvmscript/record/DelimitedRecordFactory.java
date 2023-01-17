@@ -385,7 +385,7 @@ public class DelimitedRecordFactory extends RecordFactory {
     public List<String[]> parseFileToList(String filename) throws Exception {
         CsvParserSettings parserSettings = new CsvParserSettings();
         parserSettings.setLineSeparatorDetectionEnabled(true);
-        parserSettings.setDelimiterDetectionEnabled(true, ',', '|');
+        parserSettings.setDelimiterDetectionEnabled(true, ',', '|', '\t');
         parserSettings.setAutoConfigurationEnabled(true);
         parserSettings.setHeaderExtractionEnabled(false);
         parserSettings.setCommentProcessingEnabled(false);
