@@ -159,7 +159,7 @@ public class SftpUtility {
         sFtpOpenConnection(server, user, password, 22);
     }
 
-    public static String[] ftpLs(String fileSpec) throws Exception {
+    public static String[] sFtpLs(String fileSpec) throws Exception {
         Vector<ChannelSftp.LsEntry> vector = sftpChannel.ls(fileSpec);
         ArrayList<String> filenames = new ArrayList<String>();
         for (ChannelSftp.LsEntry entry : vector) {
@@ -167,6 +167,10 @@ public class SftpUtility {
         }
 
         return filenames.toArray(new String[0]);
+    }
+
+    private static String[]  ftpLs(String fileSpec) throws Exception {
+        return sFtpLs(fileSpec);
     }
 
     public static String[] ftpDir(String fileSpec) throws Exception {
