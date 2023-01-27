@@ -57,7 +57,17 @@ public class DateTimeUtility {
         return now.format(DateTimeFormatter.ofPattern(format));
     }
 
+    public static String convertDateStringFormat(String inputDateString, String outputFormat) {
+        return convertDateStringFormat(inputDateString, "yyyy-MM-dd", outputFormat);
+    }
+
+    public static String convertDateStringFormat(String inputDateString, String inputFormat, String outputFormat) {
+        var inputDate = DateTimeUtility.toLocalDateFromString(inputDateString, inputFormat);
+        var outputDateString = DateTimeUtility.toStringFromLocalDate(inputDate, outputFormat);
+        return outputDateString;
+    }
+
     public static void main(String[] args) {
-        System.out.println(toStringFromLocalDate(LocalDate.now(), "MM-dd-uu"));
+        System.out.println(convertDateStringFormat("2023-01-25", "MM-dd-uu"));
     }
 }

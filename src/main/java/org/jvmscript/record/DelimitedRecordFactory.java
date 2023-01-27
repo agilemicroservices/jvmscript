@@ -47,26 +47,25 @@ public class DelimitedRecordFactory extends RecordFactory {
             int fieldsToProcess = Math.min(idDataFieldIdMap.size(), currentLine.length);
 
             for (var beanField : idDataFieldIdMap.values()) {
-
-                try {
-                    String beanFieldStringValue = currentLine[beanField.dataField.id()];
-                    setBeanField(bean, beanField, beanFieldStringValue);
+                if (beanField.dataField.id() < currentLine.length) {
+                    try {
+                        String beanFieldStringValue = currentLine[beanField.dataField.id()];
+                        setBeanField(bean, beanField, beanFieldStringValue);
+                    } catch (Exception e) {
+                        logger.error("Field id {} is invalid\r\n" +
+                                        "in file {}\r\n" +
+                                        "current line is {}\r\n" +
+                                        "number of data records in object {}  = {}\r\n" +
+                                        "Number of records in line is {}",
+                                beanField.dataField.id(),
+                                filename,
+                                lineCnt,
+                                beanClass.getName(),
+                                idDataFieldIdMap.size(),
+                                currentLine.length);
+                        throw e;
+                    }
                 }
-                catch (Exception e) {
-                    logger.error("Field id {} is invalid\r\n"  +
-                                  "in file {}\r\n" +
-                                  "current line is {}\r\n" +
-                                  "number of data records in object {}  = {}\r\n" +
-                                  "Number of records in line is {}",
-                                  beanField.dataField.id(),
-                                  filename,
-                                  lineCnt,
-                                  beanClass.getName(),
-                                  idDataFieldIdMap.size(),
-                                  currentLine.length);
-                    throw e;
-                }
-
             }
             beans.add(bean);
         }
