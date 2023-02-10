@@ -1,8 +1,9 @@
 package org.jvmscript.file;
 
-import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
-import net.lingala.zip4j.util.Zip4jConstants;
+import net.lingala.zip4j.model.enums.CompressionLevel;
+import net.lingala.zip4j.model.enums.CompressionMethod;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -30,7 +31,7 @@ import static org.jvmscript.datetime.DateTimeUtility.getDateTimeString;
 
 public class FileUtility {
     private static final Logger logger = LogManager.getLogger(FileUtility.class);
-
+    private static boolean useTemp = false;
     public static String[] ls(String pathName) throws IOException {
         return dir(pathName);
     }
@@ -40,8 +41,9 @@ public class FileUtility {
     }
 
     public static String[] dir(String pathName, boolean recursive) throws IOException{
-
-        File directory = new File(getFilePath(pathName));
+        var directoryName = getFilePath(pathName);
+        if ("".equals(directoryName)) directoryName = ".";
+        File directory = new File(directoryName);
         IOFileFilter filter = new WildcardFileFilter(getFileName(pathName), IOCase.INSENSITIVE);
         Collection<File> files;
 
@@ -363,7 +365,8 @@ public class FileUtility {
         logger.info("Archive File(s) {} to {}", sourceFilename, archiveSubFolder);
 
         makeDirectory(archiveSubFolder);
-        String[] archiveFiles = moveFile(sourceFilename, archiveSubFolder);
+//        String[] archiveFiles = moveFile(sourceFilename, archiveSubFolder);
+        String[] archiveFiles = copyFile(sourceFilename, archiveSubFolder);
 
         return archiveFiles;
     }
@@ -537,8 +540,8 @@ public class FileUtility {
         ZipFile zipFile = new ZipFile(zipFilename);
         File inputFile = new File(filename);
         ZipParameters zipParameters = new ZipParameters();
-        zipParameters.setCompressionMethod(Zip4jConstants.COMP_DEFLATE);
-        zipParameters.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_NORMAL);
+        zipParameters.setCompressionMethod(CompressionMethod.DEFLATE);
+        zipParameters.setCompressionLevel(CompressionLevel.NORMAL);
         zipFile.addFile(inputFile, zipParameters);
         logger.info("zipFile filename {} to {} zipfile", filename, zipFilename);
         return zipFilename;
@@ -547,8 +550,8 @@ public class FileUtility {
     public static void zipFile(String[] filenameList, String zipFilename) throws Exception {
         ZipFile zipFile = new ZipFile(zipFilename);
         ZipParameters zipParameters = new ZipParameters();
-        zipParameters.setCompressionMethod(Zip4jConstants.COMP_DEFLATE);
-        zipParameters.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_NORMAL);
+        zipParameters.setCompressionMethod(CompressionMethod.DEFLATE);
+        zipParameters.setCompressionLevel(CompressionLevel.NORMAL);
 
         ArrayList<File> files = new ArrayList<>();
         for (String filename : filenameList) {
@@ -572,14 +575,19 @@ public class FileUtility {
 
         String endPath = directory.getName();
 
-        String zipFilename = directory.getAbsolutePath() + File.separator + endPath + ".zip";
+//        String zipFilename = directory.getAbsolutePath() + File.separator + endPath + ".zip";
+        String zipFilename = getTimeStampFilename(endPath + ".zip");
+        if (useTemp) {
+            zipFilename = System.getProperty("java.io.tmpdir") + "/" + zipFilename;
+        }
+
         if (fileExists(zipFilename)) {
             throw new Exception("Zipfile directory name " + zipFilename + " already exists");
         }
         ZipFile zipFile = new ZipFile(zipFilename);
 
         if (recursive) {
-            zipFile.addFolder(directoryName, getDefaultZipParameters());
+            zipFile.addFolder(directory, getDefaultZipParameters());
         }
         else {
             ArrayList<File> nonDirectoryFiles = new ArrayList<File>();
@@ -598,8 +606,8 @@ public class FileUtility {
 
     private static ZipParameters getDefaultZipParameters() {
         ZipParameters zipParameters = new ZipParameters();
-        zipParameters.setCompressionMethod(Zip4jConstants.COMP_DEFLATE);
-        zipParameters.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_NORMAL);
+        zipParameters.setCompressionMethod(CompressionMethod.DEFLATE);
+        zipParameters.setCompressionLevel(CompressionLevel.NORMAL);
         zipParameters.setIncludeRootFolder(true);
         return zipParameters;
     }
@@ -656,19 +664,19 @@ public class FileUtility {
     public static void archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory) throws Exception{
         String dateFormat = "yyyy-MM" + File.separator + "yyyy-MM-dd";
         archiveZipDirectoryWithDate(sourceDirectoryName, targetDirectory, dateFormat);
-
     }
 
     public static void archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory, String dateFormat) throws Exception{
+        useTemp = true;
         String zipFilename = zipDirectory(sourceDirectoryName, true);
-        String timeStampedFilename = timeStampFile(zipFilename);
-        archiveFile(timeStampedFilename, targetDirectory);
+        archiveFile(zipFilename, targetDirectory);
         cleanDirectory(sourceDirectoryName);
+        useTemp = false;
     }
 
     public static void main(String[] args) throws Exception {
-        String[] files = archiveFile("/dev/source.txt", "/archive/dev");
-        copyFile(files[0], "/dev/dest.txt");
-        logger.info("files = {}", files.length);
+        useTemp = true;
+        var filename = zipDirectory("data/confirms/", true);
+        System.out.println(filename);
     }
 }

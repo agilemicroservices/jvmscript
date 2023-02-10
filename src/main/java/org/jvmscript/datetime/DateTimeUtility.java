@@ -49,7 +49,7 @@ public class DateTimeUtility {
 
     public static String getDateTimeString() {
         LocalDateTime now = LocalDateTime.now();
-        return now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        return now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss.SSS"));
     }
 
     public static String getDateTimeString(String format) {
