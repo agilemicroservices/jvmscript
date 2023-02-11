@@ -1,10 +1,17 @@
 package org.jvmscript.sftp;
 
-import com.jcraft.jsch.*;
+import net.schmizz.sshj.SSHClient;
+import net.schmizz.sshj.sftp.RemoteResourceInfo;
+import net.schmizz.sshj.sftp.StatefulSFTPClient;
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
+import net.schmizz.sshj.userauth.keyprovider.KeyProvider;
 import org.apache.logging.log4j.LogManager;
+import org.jvmscript.file.FileUtility;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Vector;
+import java.util.List;
 
 import static org.jvmscript.property.PropertyUtility.propertyGet;
 import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
@@ -13,101 +20,15 @@ public class SftpUtility {
 
     private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(SftpUtility.class);
 
-    public static class JschLogger implements Logger {
-        static java.util.Hashtable name=new java.util.Hashtable();
-        static{
-            name.put(DEBUG, "DEBUG: ");
-            name.put(INFO, "INFO: ");
-            name.put(WARN, "WARN: ");
-            name.put(ERROR, "ERROR: ");
-            name.put(FATAL, "FATAL: ");
-        }
-        public boolean isEnabled(int level){
-            return true;
-        }
-        public void log(int level, String message){
-
-            switch (level) {
-                case 0:
-                    logger.debug("{}", message);
-                    break;
-                case 1:
-                    logger.info("{}", message);
-                    break;
-                case 2:
-                    logger.warn("{}", message);
-                    break;
-                case 3:
-                case 4:
-                    logger.error("{}", message);
-                    break;
-                default:
-                    logger.info("level {} {}", level, message);
-                    break;
-            }
-        }
-    }
-
-    private static Session session = null;
+    private static SSHClient sshClient = null;
+    private static StatefulSFTPClient sftpClient = null;
     private static String keyFile = null;
-    private static ChannelSftp sftpChannel;
 
-    public static void sFtpConnect() throws JSchException {
-        session.connect();
-        Channel channel = session.openChannel("sftp");
-        channel.connect();
-        sftpChannel = (ChannelSftp) channel;
-    }
-
-    public static void sFtpCloseConnection() {
-        logger.info("SftpUtility.closeSFtpConnection sftpChannel.exit()");
-        sftpChannel.exit();
-        logger.info("SftpUtility.closeSFtpConnection session.disconnect()");
-        session.disconnect();
-    }
-
-    public static String sFtpPwd() throws SftpException {
-        String pwd = sftpChannel.pwd();
-        logger.info("SftpUtility.pwd = {}", pwd);
-        return pwd;
-    }
-
-    public static void sFtpCd(String remoteDirectory) throws SftpException {
-        logger.info("SftpUtility.cd remoteDirectory = {}", remoteDirectory);
-        sftpChannel.cd(remoteDirectory);
-    }
-
-    public static void sFtpLcd(String localDirectory) throws Exception {
-        logger.info("SftpUtility.lcd localDirectory = {}", localDirectory);
-        sftpChannel.lcd(localDirectory);
-    }
-
-    public static void sFtpPut(String localFile) throws SftpException {
-        sFtpPut(localFile, localFile);
-    }
-
-    public static void sFtpPut(String localFile, String remoteFile) throws SftpException {
-        logger.info("SftpUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
-        sftpChannel.put(localFile, remoteFile);
-    }
-
-    public static void sFtpGet(String remoteFile) throws Exception {
-        sFtpGet(remoteFile, remoteFile);
-    }
-
-    public static void sFtpGet(String remoteFile, String localFile) throws Exception {
-        logger.info("SftpUtility.get remoteFile = {} localFile = {}", remoteFile, localFile);
-        sftpChannel.get(remoteFile, localFile);
-    }
-
-    public static String sFtpLPwd() {
-        return sftpChannel.lpwd();
-    }
+    private static String hostPort;
 
     public static void sFtpOpenConnection() throws Exception {
         sFtpOpenConnection("application.properties");
     }
-
     public static void sFtpOpenConnection(String propertyFilename) throws Exception {
         propertyOpenFileClassPath(propertyFilename);
 
@@ -124,30 +45,82 @@ public class SftpUtility {
             ftpPort = Integer.valueOf(ftpPortString);
         }
 
+        hostPort = ftpServer + ":" + ftpPort.toString();
+
         sFtpOpenConnection(ftpServer, ftpUser, ftpPassword, ftpPort);
     }
 
     public static void sFtpOpenConnection(String server, String user, String password, int port) throws Exception {
 
-        JSch.setLogger(new JschLogger());
+        sshClient = new SSHClient();
+        sshClient.addHostKeyVerifier(new PromiscuousVerifier());
+        sshClient.loadKnownHosts();
+        sshClient.connect(server, port);
 
-        JSch jsch = new JSch();
         if (keyFile != null) {
-            jsch.addIdentity(keyFile);
+            var privateKeyFile = new File(keyFile);
+            KeyProvider keys = sshClient.loadKeys(privateKeyFile.getPath());
+            sshClient.authPublickey(user, keyFile);
         }
-        logger.info("openSFtpConnection server = {} user = {} port = {}", server, user, port);
-        session = jsch.getSession(user, server, port);
-        session.setConfig("StrictHostKeyChecking", "no");
-        session.setConfig("compression.s2c", "zlib@openssh.com,zlib,none");
-        session.setConfig("compression.c2s", "zlib@openssh.com,zlib,none");
-        session.setConfig("compression_level", "9");
-
-
-        if (keyFile == null) {
-            session.setPassword(password);
+        else {
+            sshClient.authPassword(user, password);
         }
 
-        sFtpConnect();
+        sftpClient = (StatefulSFTPClient) sshClient.newStatefulSFTPClient();
+    }
+
+    public static void sFtpCloseConnection() throws Exception{
+        logger.info("SftpUtility.closeSFtpConnection sftpClient.close()");
+        sftpClient.close();
+        logger.info("SftpUtility.closeSFtpConnection sshClient.disconnect()");
+        sshClient.disconnect();
+    }
+
+    public static String sFtpPwd() throws IOException {
+        String pwd = sftpClient.pwd();
+        logger.info("SftpUtility.pwd = {}", pwd);
+        return pwd;
+    }
+
+    public static void sFtpCd(String remoteDirectory) throws IOException {
+        logger.info("SftpUtility.cd remoteDirectory = {}", remoteDirectory);
+        sftpClient.cd(remoteDirectory);
+    }
+
+    public static void sFtpLcd(String localDirectory) throws Exception {
+        //no implementation
+        logger.info("********* no implmentation SftpUtility.lcd localDirectory = {}", localDirectory);
+//        sftpClient.cd(localDirectory);
+    }
+
+    public static void sFtpPut(String localFile) throws IOException {
+        sFtpPut(localFile, localFile);
+    }
+
+    public static void sFtpPut(String localFile, String remoteFile) throws IOException {
+        logger.info("SftpUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
+        sftpClient.put(localFile, remoteFile);
+    }
+
+    public static void sFtpGet(String remoteFile) throws Exception {
+        sFtpGet(remoteFile, remoteFile);
+    }
+
+    public static void sFtpGet(String remoteFile, String localFile) throws Exception {
+        logger.info("SftpUtility.get remoteFile = {} localFile = {}", remoteFile, localFile);
+        try {
+            sftpClient.get(remoteFile, localFile);
+        }
+        catch(Exception e) {
+            logger.error("sFtp Server {} Error {}, Remote File {}, Local File {}", hostPort, e.getMessage(), remoteFile, localFile);
+            throw e;
+        }
+    }
+
+    public static String sFtpLPwd() {
+        //no implementation
+        logger.info("********* no implmentation SftpUtility.sFtpLPwd()");
+        return "";
     }
 
     public static void sFtpAddIdentity(String inputKeyFile) {
@@ -155,30 +128,50 @@ public class SftpUtility {
         keyFile = inputKeyFile;
     }
 
-    public static void openSFtpConnection(String server, String user, String password) throws Exception {
-        sFtpOpenConnection(server, user, password, 22);
+    public static void ftpRm(String filename) throws IOException {
+        logger.info("SftpUtility.ftpRm, filename = {}", filename);
+        sftpClient.rm(filename);
     }
 
-    public static String[] sFtpLs(String fileSpec) throws Exception {
-        Vector<ChannelSftp.LsEntry> vector = sftpChannel.ls(fileSpec);
+    public static String[] sFtpLs() throws IOException {
+        return  sFtpLs("*");
+    }
+
+    public static String[] sFtpLs(String fileSpec) throws IOException {
+        boolean wildcard = false;
+        var baseFileName = FileUtility.getFileName(fileSpec);
+        var path = FileUtility.getFilePath(fileSpec);
+
+        if (baseFileName.contains("*" )) {
+            wildcard = true;
+            baseFileName = baseFileName.replace("*", ".*");
+        }
+        if ( ".".equals(baseFileName)) {
+            wildcard = true;
+            baseFileName = ".*";
+        }
+
+        List<RemoteResourceInfo> files;
+        if ("".equals(path)) {
+            files = sftpClient.ls();
+        }
+        else {
+            files = sftpClient.ls(path);
+        }
+
         ArrayList<String> filenames = new ArrayList<String>();
-        for (ChannelSftp.LsEntry entry : vector) {
-            filenames.add(entry.getFilename());
+        for (RemoteResourceInfo remoteResourceInfo : files) {
+            if (wildcard == true && remoteResourceInfo.getName().matches(baseFileName)) {
+                filenames.add(remoteResourceInfo.getName());
+            }
+            else if (wildcard == false && "".equals(baseFileName) ) {
+                filenames.add(remoteResourceInfo.getName());
+            }
+            else if ("".equals(baseFileName) == false && baseFileName.equals(remoteResourceInfo.getName())) {
+                filenames.add(remoteResourceInfo.getName());
+            }
         }
 
         return filenames.toArray(new String[0]);
-    }
-
-    private static String[]  ftpLs(String fileSpec) throws Exception {
-        return sFtpLs(fileSpec);
-    }
-
-    public static String[] ftpDir(String fileSpec) throws Exception {
-        return ftpLs(fileSpec);
-    }
-
-    public static void ftpRm(String filename) throws SftpException {
-        logger.info("SftpUtility.ftpRm, filename = {}", filename);
-        sftpChannel.rm(filename);
     }
 }

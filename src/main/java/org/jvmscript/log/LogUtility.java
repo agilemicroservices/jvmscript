@@ -10,7 +10,14 @@ public class LogUtility {
 
     public static Logger logger = LogManager.getLogger("script.logger");
 
-    public static void initLogger(String loggerName) {logger = LogManager.getLogger(loggerName);}
+    public static void initLogger(String loggerName) {
+        logger = LogManager.getLogger(loggerName);
+    }
+
+    public static void initLogger(String loggerName, String mdcKey) {
+        logger = LogManager.getLogger(loggerName);
+        mdcPush(mdcKey, loggerName);
+    }
 
     public static void debug(String logFormatString, Object... args) {
         logger.debug(logFormatString, args);
