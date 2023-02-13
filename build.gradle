@@ -29,7 +29,7 @@ configurations.all {
 
 ext {
     spockVersion = '2.0-groovy-3.0'
-    groovyVersion = '4.0.6'
+    groovyVersion = '4.0.9'
 
     pomFilePath = "${project.projectDir}/build/publications/jar/pom-default.xml"
     pomFile = file(pomFilePath)
@@ -107,41 +107,41 @@ dependencies {
     implementation ('org.apache.logging.log4j:log4j-core:2.17.2')
     implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j18-impl', version: '2.17.2'
 
-    api group: 'commons-io', name: 'commons-io', version: '2.6'
-    api group: 'org.apache.commons', name: 'commons-lang3', version: '3.8.1'
-    api group: 'org.apache.commons', name: 'commons-compress', version: '1.18'
+    api group: 'commons-io', name: 'commons-io', version: '2.11.0'
+    api group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    api group: 'org.apache.commons', name: 'commons-compress', version: '1.22'
     api group: 'org.apache.commons', name: 'commons-exec', version: '1.3'
-    api group: 'commons-cli', name: 'commons-cli', version:'1.4'
-    api group: 'commons-net', name: 'commons-net', version:'3.6'
+    api group: 'commons-cli', name: 'commons-cli', version:'1.5.0'
+    api group: 'commons-net', name: 'commons-net', version:'3.9.0'
 
-    api group: 'org.apache.httpcomponents', name: 'httpclient', version:'4.5.9'
-    api group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.9'
+    api group: 'org.apache.httpcomponents', name: 'httpclient', version:'4.5.14'
+    api group: 'org.apache.httpcomponents', name: 'httpmime', version: '4.5.14'
 
-    api group: 'org.apache.poi', name: 'poi', version: '3.15'
-    api (group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15') {
+    api group: 'org.apache.poi', name: 'poi', version: '5.2.3'
+    api (group: 'org.apache.poi', name: 'poi-ooxml', version: '5.2.3') {
         exclude group: 'stax', module: 'stax-api'
     }
 
-    api group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.7.4'
-    api group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.7.4'
-    api group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.7.4'
+    api group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.14.2'
+    api group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.14.2'
+    api group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.2'
 
-    api group: 'com.univocity', name: 'univocity-parsers', version: '2.9.0'
+    api group: 'com.univocity', name: 'univocity-parsers', version: '2.9.1'
     api group: 'net.lingala.zip4j', name: 'zip4j', version: '2.11.3'
-    api group: 'com.jcraft', name: 'jsch', version: '0.1.55'
-    api group: 'com.jcraft', name: 'jzlib', version: '1.1.3'
+//    api group: 'com.jcraft', name: 'jsch', version: '0.1.55'
+//    api group: 'com.jcraft', name: 'jzlib', version: '1.1.3'
 
     implementation group: 'com.hierynomus', name: 'sshj', version: '0.34.0'
 
-    api group: 'com.lmax', name: 'disruptor', version: '3.4.0'
+    api group: 'com.lmax', name: 'disruptor', version: '3.4.4'
 
-    api group: 'org.bouncycastle', name: 'bcpg-jdk15on', version: '1.54'
-    api group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.54'
-    api group: 'org.bouncycastle', name: 'bcprov-ext-jdk15on', version: '1.54'
+    api group: 'org.bouncycastle', name: 'bcpg-jdk15on', version: '1.70'
+    api group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.70'
+    api group: 'org.bouncycastle', name: 'bcprov-ext-jdk15on', version: '1.70'
 
     api group: 'org.sql2o', name: 'sql2o', version: '1.5.4'
 
-    api group: 'io.netty', name: 'netty-all', version: '4.1.77.Final'
+    api group: 'io.netty', name: 'netty-all', version: '4.1.87.Final'
 
     api group: 'software.amazon.awssdk', name: 's3', version: '2.9.26'
     api group: 'software.amazon.awssdk', name: 'protocol-core', version: '2.9.26'
