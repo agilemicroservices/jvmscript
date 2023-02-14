@@ -120,9 +120,6 @@ public class DelimitedRecordFactory extends RecordFactory {
 
     public <T> ArrayList<T> getRecordListByFieldAndColumnNameFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> psositionMapping) throws Exception {
         ArrayList<ArrayList<Integer>> positionMapping = new ArrayList<ArrayList<Integer>>();
-
-
-
         return getRecordListByPositionFromFile(filename, beanClass, positionMapping);
     }
 
