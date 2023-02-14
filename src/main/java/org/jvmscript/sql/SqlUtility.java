@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
 
 
 // sql syntax for parameters
@@ -205,6 +206,19 @@ public class SqlUtility {
     public static <T> List<T> executeSqlToList(String sql, Class<T> clazz, Object... params) {
         Query query =  connection.createQueryWithParams(sql, params);
         return query.executeAndFetch(clazz);
+    }
+
+    public static <K, V> HashMap<K,V> executeSqlToMap(String sql, Class<V> clazz, Function methodFunction, Object... params) {
+        Query query =  connection.createQueryWithParams(sql, params);
+        var list =  query.executeAndFetch(clazz);
+
+        HashMap<K, V> resultMap = new HashMap<K, V>();
+        list.forEach(item -> {
+            var key = (K) methodFunction.apply(item);
+            resultMap.put(key, item);
+        });
+
+        return resultMap;
     }
 
     public static <T> T sqlFindOne(String sql, Class<T> clazz, Object... params) {

@@ -69,6 +69,14 @@ public class FileUtility {
         return onlyOneFileInDirectoryList(fileList, errorMessage);
     }
 
+    public static String onlyOneFileInDirectoryList(String fileSpec) throws Exception {
+        String[] fileList = dir(fileSpec);
+
+        if (fileList.length != 1) {
+            throw new RuntimeException("Only One File For FileSpec " + fileSpec + ". There are " + fileList.length + " files");
+        }
+        return fileList[0];
+    }
     public static String onlyOneFileInDirectoryList(String[] fileList, String errorMessage) throws Exception {
         if (fileList.length != 1) {
             throw new RuntimeException("Only One File For " + errorMessage + ". There are " + fileList.length + " files");
