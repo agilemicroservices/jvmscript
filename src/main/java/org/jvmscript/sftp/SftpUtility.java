@@ -54,7 +54,7 @@ public class SftpUtility {
 
         sshClient = new SSHClient();
         sshClient.addHostKeyVerifier(new PromiscuousVerifier());
-        sshClient.loadKnownHosts();
+//        sshClient.loadKnownHosts();
         sshClient.connect(server, port);
 
         if (keyFile != null) {
