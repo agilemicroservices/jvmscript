@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.io.filefilter.FileFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
@@ -51,7 +52,7 @@ public class FileUtility {
             files = FileUtils.listFiles(directory, filter, DirectoryFileFilter.DIRECTORY);
         }
         else {
-            files = FileUtils.listFiles(directory, filter, null);
+            files = FileUtils.listFiles(directory, filter, FileFileFilter.FILE);
         }
 
         String[] fileNames = new String[files.size()];
