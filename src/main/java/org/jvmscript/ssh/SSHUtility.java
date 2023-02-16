@@ -1,6 +1,7 @@
 package org.jvmscript.ssh;
 
 import net.schmizz.sshj.SSHClient;
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 
 import static org.jvmscript.property.PropertyUtility.propertyGet;
 import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
@@ -26,8 +27,8 @@ public class SSHUtility {
 
     public static void SSHOpenConnection(String server, String user, String password, int port) throws Exception {
         sshClient = new SSHClient();
-
-        sshClient.loadKnownHosts();
+        sshClient.addHostKeyVerifier(new PromiscuousVerifier());
+//        sshClient.loadKnownHosts();
         sshClient.connect(server);
         sshClient.authPassword(user, password);
     }
