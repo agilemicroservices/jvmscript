@@ -1,12 +1,27 @@
 package org.jvmscript.email;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicHeader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.mail.*;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.*;
+import jakarta.mail.internet.MimeMessage;
+
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
+
+import static java.nio.file.Files.readAllBytes;
 
 public class EmailUtility {
 
@@ -16,15 +31,45 @@ public class EmailUtility {
     private static Store imapStore;
     private static Session session;
     private static Transport smtpTransport;
+    private static String token;
 
     public static void openImapConnection(String server, String user, String password) throws Exception {
         Properties props = System.getProperties();
 
-        props.setProperty("mail.imapStore.protocol","imap");
+        props.put("mail.store.protocol", "imap");
+        props.put("mail.imap.host", server);
+        props.put("mail.imap.port", "993");
+        props.put("mail.imap.ssl.enable", "true");
+        props.put("mail.imap.starttls.enable", "true");
+        props.put("mail.imap.auth", "true");
+        props.put("mail.imap.auth.mechanisms", "XOAUTH2");
+        props.put("mail.imap.user", user);
+//        props.put("mail.debug", "true");
+//        props.put("mail.debug.auth", "true");
 
-        session = Session.getDefaultInstance(props, null);
-        imapStore = session.getStore("imaps");
+        session = Session.getInstance(props);
+//        session.setDebug(true);
+//        imapStore = session.getStore("imaps");
+        imapStore = session.getStore("imap");
+
         imapStore.connect(server, user, password);
+    }
+
+    public static void openOffice365ImapConnection(String propertyFilename) throws Exception {
+        Properties properties = new Properties();
+        InputStream inputStream = EmailUtility.class.getResourceAsStream("/" + propertyFilename);
+        properties.load(inputStream);
+
+        String imapServer = properties.getProperty("imap.server");
+        String imapUser = properties.getProperty("imap.user");
+        String office365TenantId = properties.getProperty("office365.tenantId");
+        String office365ClientId = properties.getProperty("office365.clientId");
+        String office365ClientSecret = properties.getProperty("office365.clientSecret");
+
+        var token = getAuthToken(office365TenantId, office365ClientId, office365ClientSecret);
+
+        openImapConnection(imapServer, imapUser, token);
+
     }
 
     public static void openImapConnection() throws Exception {
@@ -136,5 +181,50 @@ public class EmailUtility {
     public static void deleteMessage(EmailMessage emailMessage) throws Exception {
         emailMessage.message.setFlag(Flags.Flag.DELETED, true);
         imapFolder.expunge();
+    }
+
+    public static void main(String[] args) throws Exception{
+
+//
+        var app = new EmailUtility();
+//        var token = app.getAuthToken("3df9da5c-da1d-4d7f-8f3c-5e6b3bd2b1ae", "fa483d17-3402-42f9-a732-5332cc80520d", "Zjl8Q~rCKLiTZFp6NKUD6mekH1I-TpyLbVtzpcmO");
+////        System.out.println(token);
+//
+//        EmailUtility.openImapConnection("outlook.office365.com", "Bluesheetrecorder@vfmarkets.com", token);
+
+        EmailUtility.openOffice365ImapConnection("imap.properties");
+        EmailUtility.openImapFolder("Inbox");
+        var message = EmailUtility.getFirstEmailMessageInFolder();
+        var subject = message.getSubject();
+        var from = message.getSenderAddress();
+        var contentType = message.message.getContentType();
+
+        var txt = message.getText();
+
+        EmailUtility.closeImapConnection();
+    }
+
+    public static String getAuthToken(String tenantId,String clientId,String clientSecret) throws ClientProtocolException, IOException {
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpPost loginPost = new HttpPost("https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token");
+        String scopes = "https://outlook.office365.com/.default";
+        String encodedBody = "client_id=" + clientId +
+                             "&scope=" + scopes +
+                             "&client_secret=" + clientSecret +
+                             "&grant_type=client_credentials";
+
+        loginPost.setEntity(new StringEntity(encodedBody, ContentType.APPLICATION_FORM_URLENCODED));
+        loginPost.addHeader(new BasicHeader("cache-control", "no-cache"));
+        CloseableHttpResponse loginResponse = client.execute(loginPost);
+
+        InputStream inputStream = loginResponse.getEntity().getContent();
+        byte[] response = inputStream.readAllBytes();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JavaType type = objectMapper.constructType(
+                objectMapper.getTypeFactory().constructParametricType(Map.class, String.class, String.class));
+        Map<String, String> parsed = new ObjectMapper().readValue(response, type);
+
+        return parsed.get("access_token");
     }
 }

@@ -100,9 +100,14 @@ def getSignatureFiles = {
 }
 
 dependencies {
-    api group: 'javax.mail', name: 'javax.mail-api', version: '1.5.6'
-    api group: 'com.sun.mail', name: 'javax.mail', version: '1.5.6'
-    api group: 'com.sun.mail', name: 'smtp', version: '1.5.6'
+//    api group: 'javax.mail', name: 'javax.mail-api', version: '1.5.6'
+    api group: 'jakarta.mail', name: 'jakarta.mail-api', version: '2.1.1'
+
+//    api group: 'com.sun.mail', name: 'javax.mail', version: '1.5.6'
+    api group: 'org.eclipse.angus', name: 'angus-mail', version: '2.0.1'
+
+//    api group: 'com.sun.mail', name: 'smtp', version: '1.5.6'
+    api group: 'org.eclipse.angus', name: 'smtp', version: '2.0.1'
 
     implementation ('org.apache.logging.log4j:log4j-core:2.19.0')
 //    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j18-impl', version: '2.19.0'
