@@ -590,7 +590,7 @@ public class FileUtility {
             zipFilename = System.getProperty("java.io.tmpdir") + "/" + zipFilename;
         }
 
-        if (fileExists(zipFilename)) {
+        if (!useTemp && fileExists(zipFilename)) {
             throw new Exception("Zipfile directory name " + zipFilename + " already exists");
         }
         ZipFile zipFile = new ZipFile(zipFilename);
