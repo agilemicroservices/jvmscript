@@ -1,0 +1,32 @@
+package org.jvmscript.json;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+
+public class JsonUtility {
+    static boolean initialized;
+    static ObjectMapper objectMapper;
+    static ObjectWriter objectWriter;
+    static ObjectWriter objectPrettyWriter;
+
+    public static void initialize() {
+        objectMapper = new ObjectMapper();
+        objectWriter = objectMapper.writer();
+        objectPrettyWriter = objectMapper.writerWithDefaultPrettyPrinter();
+        initialized = true;
+    }
+
+    public static String jsonSerialize(Object object) throws Exception{
+        if (!initialized) initialize();
+        return objectWriter.writeValueAsString(object);
+    }
+    public static String jsonSerializePrettyPrint(Object object) throws Exception{
+        if (!initialized) initialize();
+        return objectPrettyWriter.writeValueAsString(object);
+    }
+
+    public static Object jsonDeserialize(String json, Class clazz) throws Exception {
+        if (!initialized) initialize();
+        return objectMapper.readValue(json, clazz);
+    }
+}
