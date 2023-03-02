@@ -2,6 +2,7 @@ package org.jvmscript.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class JsonUtility {
     static boolean initialized;
@@ -11,6 +12,7 @@ public class JsonUtility {
 
     public static void initialize() {
         objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         objectWriter = objectMapper.writer();
         objectPrettyWriter = objectMapper.writerWithDefaultPrettyPrinter();
         initialized = true;

@@ -26,7 +26,7 @@ public class DelimitedRecordFactory extends RecordFactory {
 
     private static final Logger logger = LogManager.getLogger(DelimitedRecordFactory.class);
 
-    public Character delimiterChar = '|';
+    public Character delimiterChar = ',';
     public Character quoteChar = null;
     public String lineSeparator = "\r\n";
 
