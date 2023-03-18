@@ -37,6 +37,12 @@ public class DateTimeUtility {
         return localDateString;
     }
 
+    public static String toStringFromLocalDateTime(LocalDateTime localDate, String formatter) {
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
+        String localDateTimeString = localDate.format(dateTimeFormatter);
+        return localDateTimeString;
+    }
+
     public static String getDateString() {
         LocalDate now = LocalDate.now();
         return now.format(DateTimeFormatter.BASIC_ISO_DATE);

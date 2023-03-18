@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import java.util.HashMap;
+
 public class JsonUtility {
     static boolean initialized;
     static ObjectMapper objectMapper;
@@ -31,4 +33,10 @@ public class JsonUtility {
         if (!initialized) initialize();
         return objectMapper.readValue(json, clazz);
     }
+
+    public static HashMap<String, Object> jsonDeserializeToMap(String jsonText) throws Exception{
+        if (!initialized) initialize();
+        return objectMapper.readValue(jsonText, HashMap.class );
+    }
+
 }

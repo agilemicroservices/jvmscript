@@ -57,12 +57,10 @@ public class FixedWidthRecordFactory extends RecordFactory {
 
                 int endPosition = annotation.start()+annotation.length();
                 String fieldString = null;
-                //if (endPosition > buffer.length()) {
+
                 if (endPosition <= buffer.length()) {
-                    //endPosition = buffer.length();
                     fieldString = buffer.substring(annotation.start(), endPosition).trim();
                 }
-                //fieldString = buffer.substring(annotation.start(), endPosition).trim();
 
                 if (!"".equals(fieldString) && fieldString != null) {
                     if (fixedWidthBeanField.field.getType() == String.class) {
@@ -76,7 +74,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
                             throw e;
                         }
                     } else if (fixedWidthBeanField.field.getType() == Integer.class) {
-                        fixedWidthBeanField.field.set(bean, new Integer(cleanNumberString(fieldString)));
+                        fixedWidthBeanField.field.set(bean, Integer.valueOf(cleanNumberString(fieldString)));
                     } else if (fixedWidthBeanField.field.getType() == LocalDate.class) {
                         DateTimeFormatter dtf = DateTimeFormatter.ofPattern(annotation.dateFormat());
                         fixedWidthBeanField.field.set(bean, LocalDate.parse(fieldString, dtf));
@@ -95,6 +93,12 @@ public class FixedWidthRecordFactory extends RecordFactory {
             }
         }
         return bean;
+    }
+
+    public String convertFixedWidthBeanToString(Object fixedWidthBean) throws Exception{
+        TreeMap<Integer, FixedWidthBeanField> fixedWidthFieldClassMap = CachedFieldsByClassMap.get(fixedWidthBean.getClass());
+        var fixedWidthBeanString = buildStringBufferFromFixedWidthBeanFieldList(fixedWidthBean, fixedWidthFieldClassMap);
+        return fixedWidthBeanString;
     }
 
     <T> TreeMap<Integer,FixedWidthBeanField> getFixedWidthDataFieldMapByClass(Class<T> beanClass) {
