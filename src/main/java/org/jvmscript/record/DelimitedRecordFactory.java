@@ -344,7 +344,7 @@ public class DelimitedRecordFactory extends RecordFactory {
                 writer.write(lineSeparator);
             }
         } catch (Exception e) {
-            logger.error("Error = {}", e);
+            logger.error("Error", e);
         } finally {
             writer.close();
         }

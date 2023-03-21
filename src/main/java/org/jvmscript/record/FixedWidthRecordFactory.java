@@ -96,7 +96,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
     }
 
     public String convertFixedWidthBeanToString(Object fixedWidthBean) throws Exception{
-        TreeMap<Integer, FixedWidthBeanField> fixedWidthFieldClassMap = CachedFieldsByClassMap.get(fixedWidthBean.getClass());
+        TreeMap<Integer, FixedWidthBeanField> fixedWidthFieldClassMap = getFixedWidthDataFieldMapByClass(fixedWidthBean.getClass());
         var fixedWidthBeanString = buildStringBufferFromFixedWidthBeanFieldList(fixedWidthBean, fixedWidthFieldClassMap);
         return fixedWidthBeanString;
     }
@@ -144,7 +144,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
                 writer.newLine();
             }
         } catch (Exception e) {
-            logger.error("Error = {}", e);
+            logger.error("Error", e);
         } finally {
             writer.close();
         }
@@ -196,7 +196,6 @@ public class FixedWidthRecordFactory extends RecordFactory {
                             annotation.name(),
                             annotation.dateFormat(),
                             annotation.length());
-                    ;
                 }
                 else if (object.getClass() == LocalDateTime.class) {
                     LocalDateTime localDateTime = (LocalDateTime) object;
