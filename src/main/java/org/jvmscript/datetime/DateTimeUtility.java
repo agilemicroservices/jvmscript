@@ -74,6 +74,9 @@ public class DateTimeUtility {
     }
 
     public static void main(String[] args) {
-        System.out.println(convertDateStringFormat("2023-01-25", "MM-dd-uu"));
+//        var time = convertDateStringFormat("2023-02-08 15:58:33.9625", "yyyy-MM-dd HH:mm:ss.SSSS", "HHmmss");
+//        System.out.println(time);
+//        return toStringFromLocalTime(time, "HHmmss");
+
     }
 }

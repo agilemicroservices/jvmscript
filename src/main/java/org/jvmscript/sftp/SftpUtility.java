@@ -174,4 +174,10 @@ public class SftpUtility {
 
         return filenames.toArray(new String[0]);
     }
+
+    public static void sFtpExec(String command) throws Exception{
+        sftpClient.ls(command);
+    }
+
+
 }
