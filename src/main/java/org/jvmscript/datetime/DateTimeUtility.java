@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.Locale;
 
 public class DateTimeUtility {
 
@@ -26,8 +28,18 @@ public class DateTimeUtility {
     }
 
     public static LocalDate toLocalDateFromString(String dateString, String formatter) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
-        LocalDate localDate = LocalDate.parse(dateString, dateTimeFormatter);
+        LocalDate localDate = null;
+
+        try {
+//            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
+            DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                                                                               .appendPattern(formatter)
+                                                                               .toFormatter(Locale.ENGLISH);
+            localDate = LocalDate.parse(dateString, dateTimeFormatter);
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
         return localDate;
     }
 
@@ -39,7 +51,8 @@ public class DateTimeUtility {
 
     public static String toStringFromLocalDateTime(LocalDateTime localDate, String formatter) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
-        String localDateTimeString = localDate.format(dateTimeFormatter);
+//        String localDateTimeString = localDate.format(dateTimeFormatter);
+        String localDateTimeString = dateTimeFormatter.format(localDate);
         return localDateTimeString;
     }
 
@@ -73,10 +86,8 @@ public class DateTimeUtility {
         return outputDateString;
     }
 
-    public static void main(String[] args) {
-//        var time = convertDateStringFormat("2023-02-08 15:58:33.9625", "yyyy-MM-dd HH:mm:ss.SSSS", "HHmmss");
-//        System.out.println(time);
-//        return toStringFromLocalTime(time, "HHmmss");
-
-    }
+//    public static void main(String[] args) {
+//        var today = convertDateStringFormat("23-Jun-23", "dd-MMM-yy", "yyyy-MM-dd");
+//        System.out.println(today);
+//    }
 }
