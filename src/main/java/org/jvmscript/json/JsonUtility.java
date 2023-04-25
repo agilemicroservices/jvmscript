@@ -1,5 +1,6 @@
 package org.jvmscript.json;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -12,12 +13,19 @@ public class JsonUtility {
     static ObjectWriter objectWriter;
     static ObjectWriter objectPrettyWriter;
 
+    public static boolean failOnUnknowProperties = false;
+
     public static void initialize() {
-        objectMapper = new ObjectMapper();
+        objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknowProperties);
         objectMapper.registerModule(new JavaTimeModule());
         objectWriter = objectMapper.writer();
         objectPrettyWriter = objectMapper.writerWithDefaultPrettyPrinter();
         initialized = true;
+    }
+
+    public static void initialize(boolean failUnknown) {
+        failOnUnknowProperties = failUnknown;
+        initialize();
     }
 
     public static String jsonSerialize(Object object) throws Exception{

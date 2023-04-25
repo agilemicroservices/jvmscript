@@ -13,6 +13,7 @@ import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -168,5 +169,9 @@ public class EmailMessage {
         }
 
         return null;
+    }
+    public void writeToEml(String filename) throws Exception{
+        var file = new FileOutputStream(new File(filename));
+        message.writeTo(file);
     }
 }

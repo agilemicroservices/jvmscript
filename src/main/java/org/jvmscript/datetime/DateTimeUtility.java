@@ -16,13 +16,17 @@ public class DateTimeUtility {
     private static final Logger logger = LogManager.getLogger(DateTimeUtility.class);
 
     public static LocalTime toLocalTimeFromString(String timeString, String formatter) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
+        var dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                .appendPattern(formatter)
+                .toFormatter(Locale.ENGLISH);
         LocalTime localTime = LocalTime.parse(timeString, dateTimeFormatter);
         return localTime;
     }
 
     public static String toStringFromLocalTime(LocalTime localTime, String formatter) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
+        var dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                .appendPattern(formatter)
+                .toFormatter(Locale.ENGLISH);
         String localTimeString = localTime.format(dateTimeFormatter);
         return localTimeString;
     }
@@ -32,9 +36,9 @@ public class DateTimeUtility {
 
         try {
 //            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
-            DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
-                                                                               .appendPattern(formatter)
-                                                                               .toFormatter(Locale.ENGLISH);
+            var dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                                                                  .appendPattern(formatter)
+                                                                  .toFormatter(Locale.ENGLISH);
             localDate = LocalDate.parse(dateString, dateTimeFormatter);
         }
         catch (Exception e) {
@@ -44,14 +48,17 @@ public class DateTimeUtility {
     }
 
     public static String toStringFromLocalDate(LocalDate localDate, String formatter) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
+        var dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                .appendPattern(formatter)
+                .toFormatter(Locale.ENGLISH);
         String localDateString = localDate.format(dateTimeFormatter);
         return localDateString;
     }
 
     public static String toStringFromLocalDateTime(LocalDateTime localDate, String formatter) {
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(formatter);
-//        String localDateTimeString = localDate.format(dateTimeFormatter);
+        var dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                .appendPattern(formatter)
+                .toFormatter(Locale.ENGLISH);
         String localDateTimeString = dateTimeFormatter.format(localDate);
         return localDateTimeString;
     }
@@ -63,7 +70,10 @@ public class DateTimeUtility {
 
     public static String getDateString(String format) {
         LocalDate now = LocalDate.now();
-        return now.format(DateTimeFormatter.ofPattern(format));
+        var dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                .appendPattern(format)
+                .toFormatter(Locale.ENGLISH);
+        return now.format(dateTimeFormatter);
     }
 
     public static String getDateTimeString() {

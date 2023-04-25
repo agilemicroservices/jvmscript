@@ -27,7 +27,7 @@ public class DelimitedRecordFactory extends RecordFactory {
     private static final Logger logger = LogManager.getLogger(DelimitedRecordFactory.class);
 
     public Character delimiterChar = ',';
-    public Character quoteChar = null;
+    public Character quoteChar = '"';
     public String lineSeparator = "\r\n";
 
     public boolean roundDecimals = false;
@@ -332,9 +332,9 @@ public class DelimitedRecordFactory extends RecordFactory {
                                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
                                 writer.write(timestamp.toLocalDateTime().format(dtf));
                             } else if (object.getClass() == String.class) {
-                                if (quoteChar != null) writer.write(quoteChar);
+                                if (quoteChar != null && ((String) object).contains(String.valueOf(delimiterChar))) writer.write(quoteChar);
                                 writer.write(object.toString());
-                                if (quoteChar != null) writer.write(quoteChar);
+                                if (quoteChar != null && object.toString().contains(String.valueOf(delimiterChar))) writer.write(quoteChar);
                             } else {
                                 writer.write(object.toString());
                             }
