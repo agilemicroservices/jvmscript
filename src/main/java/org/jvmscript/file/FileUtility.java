@@ -547,6 +547,7 @@ public class FileUtility {
 
     public static String zipFile(String filename, String zipFilename) throws Exception {
         ZipFile zipFile = new ZipFile(zipFilename);
+
         File inputFile = new File(filename);
         ZipParameters zipParameters = new ZipParameters();
         zipParameters.setCompressionMethod(CompressionMethod.DEFLATE);

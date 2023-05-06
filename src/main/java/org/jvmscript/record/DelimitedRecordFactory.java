@@ -4,6 +4,7 @@ import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jvmscript.file.FileUtility;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -37,9 +38,13 @@ public class DelimitedRecordFactory extends RecordFactory {
 
     public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass) throws Exception {
         TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
-        List<String[]> lines = parseFileToList(filename);
 
         ArrayList<T> beans = new ArrayList<T>();
+        if (!FileUtility.fileExists(filename)) {
+            return beans;
+        }
+
+        List<String[]> lines = parseFileToList(filename);
 
         long startTime = System.currentTimeMillis();
         for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
@@ -77,9 +82,13 @@ public class DelimitedRecordFactory extends RecordFactory {
     public <K, V> HashMap<K,V> getRecordMapByPositionFromFile(String filename, Class<V> beanClass, Function methodFunction) throws Exception {
 
         TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
-        List<String[]> lines = parseFileToList(filename);
 
         HashMap<K, V> beans = new HashMap<K, V>();
+        if (!FileUtility.fileExists(filename)) {
+            return beans;
+        }
+
+        List<String[]> lines = parseFileToList(filename);
 
         long startTime = System.currentTimeMillis();
         for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
@@ -125,9 +134,13 @@ public class DelimitedRecordFactory extends RecordFactory {
 
     public <T> ArrayList<T> getRecordListByPositionFromFile(String filename, Class<T> beanClass, ArrayList<ArrayList<Integer>> positionMapping) throws Exception {
         TreeMap<Integer, BeanField> idDataFieldIdMap = getIdDataFieldMapByClass(beanClass);
-        List<String[]> lines = parseFileToList(filename);
 
         ArrayList<T> beans = new ArrayList<T>();
+        if (!FileUtility.fileExists(filename)) {
+            return beans;
+        }
+
+        List<String[]> lines = parseFileToList(filename);
 
         long startTime = System.currentTimeMillis();
         for (int lineCnt = headerRows; lineCnt < lines.size()-trailerRows; lineCnt++) {
@@ -167,9 +180,13 @@ public class DelimitedRecordFactory extends RecordFactory {
 
     public <T> ArrayList<T> getRecordListByHeaderNameFromFile(String filename, Class<T> beanClass) throws Exception {
         TreeMap<String, BeanField> nameDataFieldIdMap = getNameDataFieldMapByClass(beanClass);
-        List<String[]> lines = parseFileToList(filename);
 
         ArrayList<T> beans = new ArrayList<T>();
+        if (!FileUtility.fileExists(filename)) {
+            return beans;
+        }
+
+        List<String[]> lines = parseFileToList(filename);
 
         long startTime = System.currentTimeMillis();
         String[] headerNameLine = lines.get(headerNameRow);
@@ -222,9 +239,13 @@ public class DelimitedRecordFactory extends RecordFactory {
 
     public <K, V> HashMap<K,V> getRecordMapByHeaderNameFromFile(String filename, Class<V> beanClass, Function methodFunction) throws Exception {
         TreeMap<String, BeanField> nameDataFieldIdMap = getNameDataFieldMapByClass(beanClass);
-        List<String[]> lines = parseFileToList(filename);
 
         HashMap<K, V> beans = new HashMap<K, V>();
+        if (!FileUtility.fileExists(filename)) {
+            return beans;
+        }
+
+        List<String[]> lines = parseFileToList(filename);
 
         long startTime = System.currentTimeMillis();
         String[] headerNameLine = lines.get(headerNameRow);
