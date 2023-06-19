@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.HashMap;
 
@@ -40,6 +41,11 @@ public class JsonUtility {
     public static Object jsonDeserialize(String json, Class clazz) throws Exception {
         if (!initialized) initialize();
         return objectMapper.readValue(json, clazz);
+    }
+
+    public static <T> T  jsonDeserialize(String json, TypeReference <T> type) throws Exception {
+        if (!initialized) initialize();
+        return objectMapper.readValue(json, type);
     }
 
     public static HashMap<String, Object> jsonDeserializeToMap(String jsonText) throws Exception{
