@@ -222,8 +222,7 @@ public class FixedWidthRecordFactory extends RecordFactory {
     }
 
     StringBuffer initializeStringBuffer(Integer bufferSize, String initCharacter) {
-        StringBuffer stringBuffer = new StringBuffer(bufferSize);
-        stringBuffer.replace(0, bufferSize-1, initCharacter);
+        StringBuffer stringBuffer = new StringBuffer(" ".repeat(bufferSize));
         return stringBuffer;
     }
 
