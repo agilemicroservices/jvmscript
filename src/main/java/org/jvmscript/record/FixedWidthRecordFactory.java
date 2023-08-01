@@ -1,4 +1,14 @@
 package org.jvmscript.record;
+/*
+
+writes of fixed width files start at offset 1
+reads of fixed width files start at offset 0
+
+fix this!!!!
+
+*/
+
+
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -206,12 +216,12 @@ public class FixedWidthRecordFactory extends RecordFactory {
                 }
                 else {
                     fixedWidthString = convertObjectToFixedWidth(object, annotation.name(), annotation.length());
+                    fixedWidthString = StringUtils.rightPad(fixedWidthString, annotation.length(), ' ');
                 }
+
+                fixedWidthBeanStringBuffer.replace( annotation.start()-1,annotation.start() + annotation.length()-1, fixedWidthString);
             }
-            fixedWidthBeanStringBuffer.replace( annotation.start()-1,
-                    annotation.start() + annotation.length()-1,
-                    fixedWidthString);
-        }
+         }
 
         return fixedWidthBeanStringBuffer.toString();
     }
