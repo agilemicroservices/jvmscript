@@ -1,5 +1,7 @@
 package org.jvmscript.sftp;
 
+import net.schmizz.sshj.Config;
+import net.schmizz.sshj.DefaultConfig;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.sftp.StatefulSFTPClient;
@@ -52,6 +54,7 @@ public class SftpUtility {
 
     public static void sFtpOpenConnection(String server, String user, String password, int port) throws Exception {
 
+        Config config = new DefaultConfig();
         sshClient = new SSHClient();
         sshClient.addHostKeyVerifier(new PromiscuousVerifier());
 //        sshClient.loadKnownHosts();
@@ -74,6 +77,12 @@ public class SftpUtility {
         sftpClient.close();
         logger.info("SftpUtility.closeSFtpConnection sshClient.disconnect()");
         sshClient.disconnect();
+    }
+
+    public void sFtpSetPreservedAttributes(boolean value) {
+        sftpClient.getFileTransfer().setPreserveAttributes(value);
+        //no implementation
+        logger.info("sFtpSetPreservedAttributes to {}", value);
     }
 
     public static String sFtpPwd() throws IOException {
