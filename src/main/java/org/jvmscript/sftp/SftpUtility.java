@@ -79,7 +79,7 @@ public class SftpUtility {
         sshClient.disconnect();
     }
 
-    public void sFtpSetPreservedAttributes(boolean value) {
+    public static void sFtpSetPreservedAttributes(boolean value) {
         sftpClient.getFileTransfer().setPreserveAttributes(value);
         //no implementation
         logger.info("sFtpSetPreservedAttributes to {}", value);
