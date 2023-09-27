@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jvmscript.file.FileUtility;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -45,17 +46,18 @@ public class FtpUtility {
 
     public static void ftpPut(String localFile) throws Exception {
         logger.info("FTPUtility.put localFile = {}", localFile);
-
+        var remoteFile = FileUtility.getFileName(localFile);
+        ftpPut(localFile, remoteFile);
     }
 
     public static void ftpPut(String localFile, String remoteFile) throws Exception {
         logger.info("FTPUtility.put remoteFile = {} localFile = {}", remoteFile, localFile);
-        FileOutputStream outputStream = new FileOutputStream(localFile);
-        boolean result = ftpClient.retrieveFile(remoteFile, outputStream);
-        outputStream.close();
+        FileInputStream inputStream = new FileInputStream(localFile);
+        boolean result = ftpClient.storeFile(remoteFile, inputStream);
+        inputStream.close();
 
         if (result == false) {
-            throw new RuntimeException("Could not download " + remoteFile);
+            throw new RuntimeException("Could not upload " + remoteFile);
         }
     }
 
