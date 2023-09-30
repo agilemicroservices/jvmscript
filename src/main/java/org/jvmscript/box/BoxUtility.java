@@ -59,6 +59,7 @@ public class BoxUtility {
 
     public static void main(String[] args) {
         try {
+            //need box.json in the classpath
             boxOpenConnection();
             //root folder id is 0
             boxGetFolderItems("0");
