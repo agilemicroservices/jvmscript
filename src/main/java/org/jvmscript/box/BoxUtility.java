@@ -42,7 +42,7 @@ public class BoxUtility {
         logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, uploadFile.getID(), boxFolderId);
     }
 
-    public static void getFolderItems(String folderId) {
+    public static void boxGetFolderItems(String folderId) {
         BoxFolder folder = new BoxFolder(api, folderId);
         for (BoxItem.Info itemInfo : folder) {
             if (itemInfo instanceof BoxFile.Info) {
@@ -59,15 +59,11 @@ public class BoxUtility {
 
     public static void main(String[] args) {
         try {
-            logger.info("start open connection");
             boxOpenConnection();
-            logger.info("end open connection");
+            //root folder id is 0
+            boxGetFolderItems("0");
+            boxUpLoadFile("text.txt", "0");
 
-            logger.info("start upload file");
-            boxUpLoadFile("/opt/data/scm_20230814.txt", "181303634565");
-            logger.info("end upload file");
-
-//            getFolderItems("0");
         } catch (Exception e) {
             e.printStackTrace();
         }
