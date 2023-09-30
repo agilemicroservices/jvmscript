@@ -155,6 +155,9 @@ dependencies {
     api group: 'software.amazon.awssdk', name: 's3', version: '2.9.26'
     api group: 'software.amazon.awssdk', name: 'protocol-core', version: '2.9.26'
 
+    implementation group: 'com.box', name: 'box-java-sdk', version: '4.6.0'
+
+
     api group: 'org.apache.groovy', name: 'groovy', version: groovyVersion
 
     testImplementation(group: 'org.spockframework', name: 'spock-core', version: spockVersion) {

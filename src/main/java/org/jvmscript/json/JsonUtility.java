@@ -1,5 +1,6 @@
 package org.jvmscript.json;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -19,6 +20,7 @@ public class JsonUtility {
     public static void initialize() {
         objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknowProperties);
         objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectWriter = objectMapper.writer();
         objectPrettyWriter = objectMapper.writerWithDefaultPrettyPrinter();
         initialized = true;
