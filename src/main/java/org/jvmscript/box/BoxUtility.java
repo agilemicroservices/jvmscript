@@ -9,6 +9,9 @@ import java.io.InputStreamReader;
 import java.io.FileInputStream;
 import java.io.Reader;
 import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class BoxUtility {
 
@@ -28,10 +31,6 @@ public class BoxUtility {
         reader.close();
     }
 
-    public static void boxCloseConnection() {
-//        api.
-    }
-
     public static void boxUpLoadFile(String localFile, String boxFolderId) throws Exception{
         var file = new File(localFile);
         var fileInsputStream = new FileInputStream(file);
@@ -42,19 +41,10 @@ public class BoxUtility {
         logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, uploadFile.getID(), boxFolderId);
     }
 
-    public static void boxGetFolderItems(String folderId) {
+    public static List<BoxItem.Info> boxGetFolderItems(String folderId) {
         BoxFolder folder = new BoxFolder(api, folderId);
-        for (BoxItem.Info itemInfo : folder) {
-            if (itemInfo instanceof BoxFile.Info) {
-                BoxFile.Info fileInfo = (BoxFile.Info) itemInfo;
-                logger.info("File Name: {}", fileInfo.getName());
-                // Do something with the file.
-            } else if (itemInfo instanceof BoxFolder.Info) {
-                BoxFolder.Info folderInfo = (BoxFolder.Info) itemInfo;
-                logger.info("Folder Name: {}", folderInfo.getName());
-                // Do something with the folder.
-            }
-        }
+        List<BoxItem.Info> list = StreamSupport.stream(folder.spliterator(), false).toList();
+        return list;
     }
 
     public static void main(String[] args) {
