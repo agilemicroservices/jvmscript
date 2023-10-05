@@ -52,7 +52,7 @@ public class BoxUtility {
             //need box.json in the classpath
             boxOpenConnection();
             //root folder id is 0
-            boxGetFolderItems("0");
+            var items = boxGetFolderItems("0");
             boxUpLoadFile("text.txt", "0");
 
         } catch (Exception e) {
