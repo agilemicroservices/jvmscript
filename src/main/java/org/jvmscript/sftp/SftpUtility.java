@@ -137,7 +137,7 @@ public class SftpUtility {
         keyFile = inputKeyFile;
     }
 
-    public static void ftpRm(String filename) throws IOException {
+    public static void sFtpRm(String filename) throws IOException {
         logger.info("SftpUtility.ftpRm, filename = {}", filename);
         sftpClient.rm(filename);
     }
