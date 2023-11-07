@@ -157,7 +157,6 @@ dependencies {
 
     api group: 'com.box', name: 'box-java-sdk', version: '4.6.0'
 
-
     api group: 'org.apache.groovy', name: 'groovy', version: groovyVersion
 
     testImplementation(group: 'org.spockframework', name: 'spock-core', version: spockVersion) {

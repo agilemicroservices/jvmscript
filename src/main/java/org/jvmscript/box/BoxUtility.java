@@ -1,14 +1,14 @@
 package org.jvmscript.box;
 
 import com.box.sdk.*;
+import com.box.sdk.BoxDeveloperEditionAPIConnection;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.logging.log4j.LogManager;
 import org.jvmscript.sftp.SftpUtility;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.FileInputStream;
-import java.io.Reader;
-import java.io.File;
+import java.io.*;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -47,13 +47,30 @@ public class BoxUtility {
         return list;
     }
 
+    public static List<MetadataTemplate> boxGetTemplates() {
+        var templates = MetadataTemplate.getEnterpriseMetadataTemplates("enterprise", api);
+        var templateList = new ArrayList<MetadataTemplate>();
+        for (MetadataTemplate templateInfo : templates) {
+            templateList.add(templateInfo);
+            System.out.println(templateInfo.getDisplayName());
+        }
+        return templateList;
+    }
+
+
+    public static MetadataTemplate boxGetTemplatesById(String templateId) {
+        var template = MetadataTemplate.getMetadataTemplateByID(api, templateId);
+        return template;
+    }
+
     public static void main(String[] args) {
         try {
             //need box.json in the classpath
             boxOpenConnection();
             //root folder id is 0
+            var template = boxGetTemplatesById("");
             var items = boxGetFolderItems("0");
-            boxUpLoadFile("text.txt", "0");
+//            boxUpLoadFile("text.txt", "0");
 
         } catch (Exception e) {
             e.printStackTrace();
