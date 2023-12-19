@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.Locale;
 
 public class RecordFactory {
 
@@ -57,7 +59,12 @@ public class RecordFactory {
                     value = cleanNumberString(value);
                     beanField.field.set(bean, new BigDecimal(value));
                 } else if (beanField.field.getType() == LocalDate.class) {
-                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
+
+//                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
+                    DateTimeFormatter dtf = new DateTimeFormatterBuilder().parseCaseInsensitive()
+                                                                          .appendPattern(beanField.dataField.dateFormat())
+                                                                          .toFormatter(Locale.ENGLISH);
+
                     beanField.field.set(bean, LocalDate.parse(value, dtf));
                 } else if (beanField.field.getType() == LocalDateTime.class) {
                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
