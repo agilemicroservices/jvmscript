@@ -18,6 +18,7 @@ public class BoxUtility {
     private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(SftpUtility.class);
 
     public static BoxDeveloperEditionAPIConnection api;
+    public static Metadata metadata;
     public static void boxOpenConnection() throws Exception{
         boxOpenConnection("box.json");
     }
@@ -31,7 +32,7 @@ public class BoxUtility {
         reader.close();
     }
 
-    public static void boxUpLoadFile(String localFile, String boxFolderId) throws Exception{
+    public static String boxUpLoadFile(String localFile, String boxFolderId) throws Exception{
         var file = new File(localFile);
         var fileInsputStream = new FileInputStream(file);
         var folder = new BoxFolder(api, boxFolderId);
@@ -39,6 +40,13 @@ public class BoxUtility {
         var uploadFile = folder.uploadFile(fileInsputStream, name);
         fileInsputStream.close();
         logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, uploadFile.getID(), boxFolderId);
+        return uploadFile.getID();
+    }
+
+    public static String createFolder(String folderName, String parentFolderId) {
+        BoxFolder parentFolder = new BoxFolder(api, parentFolderId);
+        BoxFolder.Info childFolderInfo = parentFolder.createFolder(folderName);
+        return childFolderInfo.getID();
     }
 
     public static List<BoxItem.Info> boxGetFolderItems(String folderId) {
@@ -61,6 +69,19 @@ public class BoxUtility {
     public static MetadataTemplate boxGetTemplatesById(String templateId) {
         var template = MetadataTemplate.getMetadataTemplateByID(api, templateId);
         return template;
+    }
+
+    public static void addMetaData(String field, String value) throws Exception{
+        if (metadata == null) {
+            metadata = new Metadata();
+        }
+        metadata.add(field, value);
+    }
+
+    public static void createMetaData(String fileId, String templateId) {
+        var boxfile  = new BoxFile(api, fileId);
+        boxfile.createMetadata(templateId,"enterprise", metadata);
+        metadata = null;
     }
 
     public static void main(String[] args) {

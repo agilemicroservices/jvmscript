@@ -73,8 +73,8 @@ public class SftpUtility {
     }
 
     public static void sFtpCloseConnection() throws Exception{
-        logger.info("SftpUtility.closeSFtpConnection sftpClient.close()");
-        sftpClient.close();
+//        logger.info("SftpUtility.closeSFtpConnection sftpClient.close()");
+//        sftpClient.close();
         logger.info("SftpUtility.closeSFtpConnection sshClient.disconnect()");
         sshClient.disconnect();
     }
