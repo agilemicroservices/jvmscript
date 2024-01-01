@@ -1,16 +1,12 @@
 package org.jvmscript.box;
 
 import com.box.sdk.*;
-import com.box.sdk.BoxDeveloperEditionAPIConnection;
-import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.logging.log4j.LogManager;
 import org.jvmscript.sftp.SftpUtility;
 
 import java.io.*;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class BoxUtility {
@@ -76,11 +72,23 @@ public class BoxUtility {
             metadata = new Metadata();
         }
         metadata.add(field, value);
+
     }
 
     public static void createMetaData(String fileId, String templateId) {
         var boxfile  = new BoxFile(api, fileId);
         boxfile.createMetadata(templateId,"enterprise", metadata);
+        metadata = null;
+    }
+
+
+    public static void createFolderMetaData(String folderId, String templateId) {
+        BoxFolder folder = new BoxFolder(api, folderId);
+        var info = folder.getInfo();
+        folder.setMetadata(templateId, "enterprise", metadata);
+        metadata = null;
+    }
+    public static void clearMetaData() {
         metadata = null;
     }
 
