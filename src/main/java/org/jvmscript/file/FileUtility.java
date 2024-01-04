@@ -671,17 +671,18 @@ public class FileUtility {
         }
     }
 
-    public static void archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory) throws Exception{
+    public static String archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory) throws Exception{
         String dateFormat = "yyyy-MM" + File.separator + "yyyy-MM-dd";
-        archiveZipDirectoryWithDate(sourceDirectoryName, targetDirectory, dateFormat);
+        return archiveZipDirectoryWithDate(sourceDirectoryName, targetDirectory, dateFormat);
     }
 
-    public static void archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory, String dateFormat) throws Exception{
+    public static String archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory, String dateFormat) throws Exception{
         useTemp = true;
         String zipFilename = zipDirectory(sourceDirectoryName, true);
         archiveFile(zipFilename, targetDirectory);
         cleanDirectory(sourceDirectoryName);
         useTemp = false;
+        return zipFilename;
     }
 
     public static void main(String[] args) throws Exception {
