@@ -39,7 +39,7 @@ public class BoxUtility {
         return uploadFile.getID();
     }
 
-    public static String createFolder(String folderName, String parentFolderId) {
+    public static String boxCreateFolder(String folderName, String parentFolderId) {
         BoxFolder parentFolder = new BoxFolder(api, parentFolderId);
         BoxFolder.Info childFolderInfo = parentFolder.createFolder(folderName);
         return childFolderInfo.getID();
@@ -67,7 +67,7 @@ public class BoxUtility {
         return template;
     }
 
-    public static void addMetaData(String field, String value) throws Exception{
+    public static void boxAddMetaData(String field, String value) throws Exception{
         if (metadata == null) {
             metadata = new Metadata();
         }
@@ -75,20 +75,20 @@ public class BoxUtility {
 
     }
 
-    public static void createMetaData(String fileId, String templateId) {
+    public static void boxCreateMetaData(String fileId, String templateId) {
         var boxfile  = new BoxFile(api, fileId);
         boxfile.createMetadata(templateId,"enterprise", metadata);
         metadata = null;
     }
 
 
-    public static void createFolderMetaData(String folderId, String templateId) {
+    public static void boxCreateFolderMetaData(String folderId, String templateId) {
         BoxFolder folder = new BoxFolder(api, folderId);
         var info = folder.getInfo();
         folder.setMetadata(templateId, "enterprise", metadata);
         metadata = null;
     }
-    public static void clearMetaData() {
+    public static void boxClearMetaData() {
         metadata = null;
     }
 
