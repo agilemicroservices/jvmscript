@@ -2,6 +2,7 @@ package org.jvmscript.box;
 
 import com.box.sdk.*;
 import org.apache.logging.log4j.LogManager;
+import org.jvmscript.datetime.DateTimeUtility;
 import org.jvmscript.sftp.SftpUtility;
 
 import java.io.*;
@@ -43,6 +44,45 @@ public class BoxUtility {
         BoxFolder parentFolder = new BoxFolder(api, parentFolderId);
         BoxFolder.Info childFolderInfo = parentFolder.createFolder(folderName);
         return childFolderInfo.getID();
+    }
+
+
+    public static String boxCreateMonthFolder(String parentFolderId) {
+        var folderName = DateTimeUtility.getDateTimeString("yyyy-MM");
+        return boxCreateMonthFolder(parentFolderId, folderName);
+    }
+
+    public static String boxCreateMonthFolder(String parentFolderId, String folderName) {
+
+        var folderList = boxGetFolderItems(parentFolderId).stream().filter(item -> item.getType().equals("folder") && item.getName().equals(folderName)).toList();
+
+        String folderId = null;
+
+        if (folderList.size() == 0) {
+            folderId = boxCreateFolder(folderName, parentFolderId);
+            return folderId;
+        } else {
+            return folderList.get(0).getID();
+        }
+    }
+
+    public static String boxCreateDateFolder(String parentFolderId) {
+        var dateFolderName = DateTimeUtility.getDateTimeString("yyyy-MM-dd");
+        return boxCreateDateFolder(parentFolderId, dateFolderName);
+    }
+
+    public static String boxCreateDateFolder(String parentFolderId, String dateFolderName) {
+        var monthFolderId = boxCreateMonthFolder(parentFolderId, dateFolderName.substring(0,7));
+        var folderList = boxGetFolderItems(monthFolderId).stream().filter(item -> item.getType().equals("folder") && item.getName().equals(dateFolderName)).toList();
+
+        String folderId = null;
+
+        if (folderList.size() == 0) {
+            folderId = boxCreateFolder(dateFolderName, monthFolderId);
+            return folderId;
+        } else {
+            return folderList.get(0).getID();
+        }
     }
 
     public static List<BoxItem.Info> boxGetFolderItems(String folderId) {
