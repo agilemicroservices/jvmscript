@@ -1,5 +1,7 @@
 package org.jvmscript.jira;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -8,6 +10,8 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -16,24 +20,29 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.*;
+import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.jvmscript.property.PropertyUtility.propertyGet;
+import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
 
 
 public final class JiraUtility {
     private static final Logger logger = LogManager.getLogger(JiraUtility.class);
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static HttpHost jiraHost;
+
+    private static String apiToken;
+    private static String username;
+    private static String url;
 
 
     private JiraUtility() {
@@ -45,6 +54,25 @@ public final class JiraUtility {
         jiraHost = new HttpHost(host, port, AuthScope.ANY_REALM);
     }
 
+    public static void openJiraConnection() throws Exception {
+        openJiraConnection("jira.properties");
+    }
+
+    public static void openJiraConnection(String propertyFilename) throws Exception {
+        propertyOpenFileClassPath(propertyFilename);
+
+        var apiToken = propertyGet("jira.apiToken");
+        var username = propertyGet("jira.username");
+        var url = propertyGet("jira.url");
+
+        openJiraConnection(apiToken, username, url);
+    }
+
+    public static void openJiraConnection(String apiToken, String username, String url) throws Exception {
+        JiraUtility.apiToken = apiToken;
+        JiraUtility.username = username;
+        JiraUtility.url = url;
+    }
 
     private static String toString(InputStream is) throws IOException {
         Reader reader = new InputStreamReader(is);
@@ -130,6 +158,78 @@ public final class JiraUtility {
             throw new IllegalStateException("No \"key\" property found in JSON repsonse");
         }
         return matcher.group(1);
+    }
+
+    public static String jiraCreateIssue(String projectKey, String summary, String description, String issueType, String dueDate) throws IOException {
+        return jiraCreateIssue(projectKey, summary, description, issueType, dueDate, null);
+    }
+    public static String jiraCreateIssue(String projectKey,
+                                         String summary,
+                                         String description,
+                                         String issueType,
+                                         String dueDate,
+                                         Map<String, Object> additionalFieldsMap) throws IOException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> fieldsMap = new HashMap<>();
+        fieldsMap.put("project", Map.of("key", projectKey));
+        fieldsMap.put("summary", summary);
+        fieldsMap.put("description", description);
+        fieldsMap.put("duedate", dueDate);
+        fieldsMap.put("issuetype", Map.of("name", issueType));
+
+        if (additionalFieldsMap != null) {
+            additionalFieldsMap.forEach((customFieldName, customFieldValue) -> {
+                //customFieldName field id from Jira customerfield_xxxxx
+                //customFieldValue value for the is User_Group
+                Map<String, Object> customFieldMap = new HashMap<>();
+                customFieldMap.put("name", customFieldValue);
+                fieldsMap.put(customFieldName, customFieldMap);
+            });
+        }
+
+        Map<String, Object> issueMap = new HashMap<>();
+        issueMap.put("fields", fieldsMap);
+
+        String jsonBody = objectMapper.writeValueAsString(issueMap);
+
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        HttpPost request = new HttpPost(url);
+        String authHeader = Base64.getEncoder().encodeToString((username + ":" + apiToken).getBytes());
+        request.setHeader("Authorization", "Basic " + authHeader);
+        request.setHeader("Content-Type", "application/json");
+        request.setEntity(new StringEntity(jsonBody));
+
+        HttpResponse response = httpClient.execute(request);
+        HttpEntity entity = response.getEntity();
+//        String responseString = EntityUtils.toString(entity, "UTF-8");
+
+//        System.out.println("Response: " + responseString);
+        String responseString = toString(response.getEntity().getContent());
+        Matcher matcher = Pattern.compile("\"key\":\"([^\"]*)\"").matcher(responseString);
+        if (!matcher.find()) {
+            logUnexpectedResponse(response);
+            throw new IllegalStateException("No \"key\" property found in JSON repsonse");
+        }
+        return matcher.group(1);
+
+//        return responseString;
+    }
+
+    public static String jiraCustomFields(String url) throws Exception{
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        var request = new HttpGet(url);
+//        String authHeader = Base64.getEncoder().encodeToString((username + ":" + apiToken).getBytes());
+//        request.setHeader("Authorization", "Basic " + authHeader);
+        request.setHeader("Content-Type", "application/json");
+
+        HttpResponse response = httpClient.execute(request);
+        HttpEntity entity = response.getEntity();
+//        String responseString = EntityUtils.toString(entity, "UTF-8");
+
+//        System.out.println("Response: " + responseString);
+        String responseString = toString(response.getEntity().getContent());
+        return responseString;
     }
 
     public static void closeIssue(String issueIdOrKey, String username, String password) throws IOException {
