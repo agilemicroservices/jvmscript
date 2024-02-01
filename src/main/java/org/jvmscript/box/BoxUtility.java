@@ -53,10 +53,13 @@ public class BoxUtility {
 
     public static BoxFile.Info boxGetFileInfo(String fileId) {
         BoxFile boxFile = new BoxFile(api, fileId);
-        return boxFile.getInfo();
+        boxFileInfo =  boxFile.getInfo();
+        return boxFileInfo;
     }
 
-
+    public static BoxFile.Info getBoxFileInfo() {
+        return boxFileInfo;
+    }
     public static String boxCreateMonthFolder(String parentFolderId) {
         var folderName = DateTimeUtility.getDateTimeString("yyyy-MM");
         return boxCreateMonthFolder(parentFolderId, folderName);
