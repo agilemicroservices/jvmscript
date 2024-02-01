@@ -685,9 +685,15 @@ public class FileUtility {
         return zipFilename;
     }
 
+    public static String fileCalculateSHA1(String filename) throws Exception {
+        File file = new File(filename);
+        String sha1 = org.apache.commons.codec.digest.DigestUtils.sha1Hex(new FileInputStream(file));
+        logger.info("SHA1 for file {} is {}", filename, sha1);
+        return sha1;
+    }
+
     public static void main(String[] args) throws Exception {
-        useTemp = true;
-        var filename = zipDirectory("data/confirms/", true);
-        System.out.println(filename);
+        var sha1 = fileCalculateSHA1("/opt/data/localfile.txt");
+        System.out.println(sha1);
     }
 }

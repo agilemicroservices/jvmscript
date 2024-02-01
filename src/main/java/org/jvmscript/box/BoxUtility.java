@@ -16,6 +16,7 @@ public class BoxUtility {
 
     public static BoxDeveloperEditionAPIConnection api;
     public static Metadata metadata;
+    public static BoxFile.Info boxFileInfo;
     public static void boxOpenConnection() throws Exception{
         boxOpenConnection("box.json");
     }
@@ -34,16 +35,25 @@ public class BoxUtility {
         var fileInsputStream = new FileInputStream(file);
         var folder = new BoxFolder(api, boxFolderId);
         var name = file.getName();
-        var uploadFile = folder.uploadFile(fileInsputStream, name);
+        boxFileInfo = folder.uploadFile(fileInsputStream, name);
         fileInsputStream.close();
-        logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, uploadFile.getID(), boxFolderId);
-        return uploadFile.getID();
+        logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, boxFileInfo.getID(), boxFolderId);
+        return boxFileInfo.getID();
+    }
+
+    public static String boxGetFileSha1() {
+        return boxFileInfo.getSha1();
     }
 
     public static String boxCreateFolder(String folderName, String parentFolderId) {
         BoxFolder parentFolder = new BoxFolder(api, parentFolderId);
         BoxFolder.Info childFolderInfo = parentFolder.createFolder(folderName);
         return childFolderInfo.getID();
+    }
+
+    public static BoxFile.Info boxGetFileInfo(String fileId) {
+        BoxFile boxFile = new BoxFile(api, fileId);
+        return boxFile.getInfo();
     }
 
 
