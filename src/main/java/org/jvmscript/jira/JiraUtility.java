@@ -159,32 +159,38 @@ public final class JiraUtility {
         }
         return matcher.group(1);
     }
-
-    public static String jiraCreateIssue(String projectKey, String summary, String description, String issueType, String dueDate) throws IOException {
-        return jiraCreateIssue(projectKey, summary, description, issueType, dueDate, null);
-    }
-    public static String jiraCreateIssue(String projectKey,
-                                         String summary,
-                                         String description,
-                                         String issueType,
-                                         String dueDate,
-                                         Map<String, Object> additionalFieldsMap) throws IOException {
+    public static String jiraCreateIssue(Map<String, Object> inputFieldMap) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> fieldsMap = new HashMap<>();
-        fieldsMap.put("project", Map.of("key", projectKey));
-        fieldsMap.put("summary", summary);
-        fieldsMap.put("description", description);
-        fieldsMap.put("duedate", dueDate);
-        fieldsMap.put("issuetype", Map.of("name", issueType));
 
-        if (additionalFieldsMap != null) {
-            additionalFieldsMap.forEach((customFieldName, customFieldValue) -> {
-                //customFieldName field id from Jira customerfield_xxxxx
+        Map<String, Object> fieldsMap = new HashMap<>();
+
+        if (inputFieldMap != null) {
+            inputFieldMap.forEach((customFieldName, customFieldValue) -> {
+                //customFieldName field id from Jira customfield_xxxxx
                 //customFieldValue value for the is User_Group
-                Map<String, Object> customFieldMap = new HashMap<>();
-                customFieldMap.put("name", customFieldValue);
-                fieldsMap.put(customFieldName, customFieldMap);
+                if (customFieldValue != null) {
+                    var customFieldMap = new HashMap<String, Object>();
+                    switch (customFieldName) {
+                        case "project":
+                            customFieldMap.put("key", customFieldValue);
+                            fieldsMap.put(customFieldName, customFieldMap);
+                            break;
+                        case "assignee":
+                        case "reporter":
+                            customFieldMap.put("accountId", customFieldValue);
+                            fieldsMap.put(customFieldName, customFieldMap);
+                            break;
+                        case "description":
+                        case "summary":
+                        case "duedate":
+                            fieldsMap.put(customFieldName, customFieldValue);
+                            break;
+                        default:
+                            customFieldMap.put("name", customFieldValue);
+                            fieldsMap.put(customFieldName, customFieldMap);
+                    }
+                }
             });
         }
 
@@ -202,18 +208,14 @@ public final class JiraUtility {
 
         HttpResponse response = httpClient.execute(request);
         HttpEntity entity = response.getEntity();
-//        String responseString = EntityUtils.toString(entity, "UTF-8");
-
-//        System.out.println("Response: " + responseString);
         String responseString = toString(response.getEntity().getContent());
+
         Matcher matcher = Pattern.compile("\"key\":\"([^\"]*)\"").matcher(responseString);
         if (!matcher.find()) {
             logUnexpectedResponse(response);
             throw new IllegalStateException("No \"key\" property found in JSON repsonse");
         }
         return matcher.group(1);
-
-//        return responseString;
     }
 
     public static String jiraCustomFields(String url) throws Exception{
