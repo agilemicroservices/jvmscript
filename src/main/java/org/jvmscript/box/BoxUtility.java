@@ -3,6 +3,7 @@ package org.jvmscript.box;
 import com.box.sdk.*;
 import org.apache.logging.log4j.LogManager;
 import org.jvmscript.datetime.DateTimeUtility;
+import org.jvmscript.file.FileUtility;
 import org.jvmscript.sftp.SftpUtility;
 
 import java.io.*;
@@ -37,6 +38,12 @@ public class BoxUtility {
         var name = file.getName();
         boxFileInfo = folder.uploadFile(fileInsputStream, name);
         fileInsputStream.close();
+
+        var localSha1 = FileUtility.fileCalculateSHA1(localFile);
+        if (!localSha1.equals(boxFileInfo.getSha1())) {
+            throw new Exception("SHA1 does not match for file " + localFile);
+        }
+
         logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, boxFileInfo.getID(), boxFolderId);
         return boxFileInfo.getID();
     }
