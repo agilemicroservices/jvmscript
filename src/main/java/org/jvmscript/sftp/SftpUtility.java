@@ -171,13 +171,13 @@ public class SftpUtility {
         ArrayList<String> filenames = new ArrayList<String>();
         for (RemoteResourceInfo remoteResourceInfo : files) {
             if (wildcard == true && remoteResourceInfo.getName().matches(baseFileName)) {
-                filenames.add(remoteResourceInfo.getName());
+                if (!remoteResourceInfo.isDirectory()) filenames.add(remoteResourceInfo.getName());
             }
             else if (wildcard == false && "".equals(baseFileName) ) {
-                filenames.add(remoteResourceInfo.getName());
+                if (!remoteResourceInfo.isDirectory()) filenames.add(remoteResourceInfo.getName());
             }
             else if ("".equals(baseFileName) == false && baseFileName.equals(remoteResourceInfo.getName())) {
-                filenames.add(remoteResourceInfo.getName());
+                if (!remoteResourceInfo.isDirectory()) filenames.add(remoteResourceInfo.getName());
             }
         }
 
