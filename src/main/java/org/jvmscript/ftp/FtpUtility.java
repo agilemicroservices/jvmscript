@@ -2,6 +2,7 @@ package org.jvmscript.ftp;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jvmscript.file.FileUtility;
@@ -9,6 +10,7 @@ import org.jvmscript.file.FileUtility;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import static org.jvmscript.property.PropertyUtility.propertyGet;
 import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
@@ -133,8 +135,19 @@ public class FtpUtility {
     }
 
     public static String[] ftpLs(String fileSpec) throws Exception {
-        String[] files = ftpClient.listNames(fileSpec);
-        return files;
+//        String[] files = ftpClient.listNames(fileSpec);
+        var files = ftpClient.listFiles(fileSpec);
+
+        ArrayList<String> filenames = new ArrayList<String>();
+
+        for (FTPFile file : files) {
+            String details = file.getName();
+            if (!file.isDirectory()) {
+                filenames.add(file.getName());
+            }
+        }
+
+        return filenames.toArray(new String[0]);
     }
 
     public static String[] ftpDir(String fileSpec) throws Exception {
