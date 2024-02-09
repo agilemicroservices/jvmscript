@@ -35,7 +35,12 @@ public class RecordFactory {
                 value = value.trim();
 
                 if (beanField.field.getType() == String.class) {
-                    beanField.field.set(bean, value);
+                    if ("null".equals(value)) {
+                        beanField.field.set(bean, null);
+                    }
+                    else {
+                        beanField.field.set(bean, value);
+                    }
                 } else if (beanField.field.getType() == Integer.class || beanField.field.getType() == int.class) {
                     value = cleanNumberString(value);
                     if (value == null && beanField.field.getType() == int.class) {
