@@ -41,6 +41,15 @@ public class RecordFactory {
                     beanField.field.set(bean, Integer.valueOf(value));
                 } else if (beanField.field.getType() == Long.class || beanField.field.getType() == long.class) {
                     value = cleanNumberString(value);
+                    if (value == null && beanField.field.getType() == long.class) {
+                        beanField.field.set(bean, 0.00);
+                    }
+                    else if (value == null && beanField.field.getType() == Long.class) {
+                        beanField.field.set(bean, null);
+                    }
+                    else {
+                        beanField.field.set(bean, Double.valueOf(value));
+                    }
                     beanField.field.set(bean, Long.valueOf(value));
                 } else if (beanField.field.getType() == Double.class || beanField.field.getType() == double.class) {
                     value = cleanNumberString(value);
@@ -120,10 +129,12 @@ public class RecordFactory {
     }
 
     public static void main(String[] args) throws Exception {
-        var factory = new RecordFactory();
+//        var factory = new RecordFactory();
+//
+//       System.out.println("clean string = " + factory.cleanNumberString("3.0E-4"));
+//       System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
+//        System.out.println("clean string = " + factory.cleanNumberString("-9999"));
 
-       System.out.println("clean string = " + factory.cleanNumberString("3.0E-4"));
-       System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
-        System.out.println("clean string = " + factory.cleanNumberString("-9999"));
+        var value = Long.valueOf(null);
     }
 }
