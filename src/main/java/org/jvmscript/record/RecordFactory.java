@@ -147,6 +147,5 @@ public class RecordFactory {
 //       System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
 //        System.out.println("clean string = " + factory.cleanNumberString("-9999"));
 
-        var value = new BigDecimal(null);
     }
 }
