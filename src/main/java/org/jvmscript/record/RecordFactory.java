@@ -100,12 +100,17 @@ public class RecordFactory {
         numberString = StringUtils.replace(numberString, "$", "");
         numberString = StringUtils.replace(numberString, " ", "");
 
+
         if (StringUtils.endsWith(numberString, "-")) {
             numberString = StringUtils.replace(numberString, "-", "");
             numberString = "-" + numberString;
         }
         else if (!numberString.startsWith("-") && numberString.contains("-") &&  !numberString.contains("E-")){
             numberString = StringUtils.replace(numberString, "-", "");
+        }
+
+        if ("null".equals(numberString)) {
+            return null;
         }
 
         return numberString;
