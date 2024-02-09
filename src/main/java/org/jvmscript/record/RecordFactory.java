@@ -38,19 +38,26 @@ public class RecordFactory {
                     beanField.field.set(bean, value);
                 } else if (beanField.field.getType() == Integer.class || beanField.field.getType() == int.class) {
                     value = cleanNumberString(value);
-                    beanField.field.set(bean, Integer.valueOf(value));
+                    if (value == null && beanField.field.getType() == int.class) {
+                        beanField.field.set(bean, 0);
+                    }
+                    else if (value == null && beanField.field.getType() == Integer.class) {
+                        beanField.field.set(bean, null);
+                    }
+                    else {
+                        beanField.field.set(bean, Integer.valueOf(value));
+                    }
                 } else if (beanField.field.getType() == Long.class || beanField.field.getType() == long.class) {
                     value = cleanNumberString(value);
                     if (value == null && beanField.field.getType() == long.class) {
-                        beanField.field.set(bean, 0.00);
+                        beanField.field.set(bean, 0);
                     }
                     else if (value == null && beanField.field.getType() == Long.class) {
                         beanField.field.set(bean, null);
                     }
                     else {
-                        beanField.field.set(bean, Double.valueOf(value));
+                        beanField.field.set(bean, Long.valueOf(value));
                     }
-                    beanField.field.set(bean, Long.valueOf(value));
                 } else if (beanField.field.getType() == Double.class || beanField.field.getType() == double.class) {
                     value = cleanNumberString(value);
                     if (value == null && beanField.field.getType() == double.class) {
@@ -69,7 +76,12 @@ public class RecordFactory {
                     }
                 } else if (beanField.field.getType() == BigDecimal.class) {
                     value = cleanNumberString(value);
-                    beanField.field.set(bean, new BigDecimal(value));
+                    if (value == null) {
+                        beanField.field.set(bean, null);
+                    }
+                    else {
+                        beanField.field.set(bean, new BigDecimal(value));
+                    }
                 } else if (beanField.field.getType() == LocalDate.class) {
 
 //                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern(beanField.dataField.dateFormat());
@@ -135,6 +147,6 @@ public class RecordFactory {
 //       System.out.println("clean string = " + factory.cleanNumberString("1234-5678"));
 //        System.out.println("clean string = " + factory.cleanNumberString("-9999"));
 
-        var value = Long.valueOf(null);
+        var value = new BigDecimal(null);
     }
 }
