@@ -33,6 +33,7 @@ public class RecordFactory {
             if (value != null && !"".equals(value)) {
 
                 value = value.trim();
+                beanField.field.setAccessible(true);
 
                 if (beanField.field.getType() == String.class) {
                     if ("null".equals(value)) {

@@ -68,15 +68,17 @@ public class SftpUtility {
         else {
             sshClient.authPassword(user, password);
         }
-
         sftpClient = (StatefulSFTPClient) sshClient.newStatefulSFTPClient();
     }
 
     public static void sFtpCloseConnection() throws Exception{
-//        logger.info("SftpUtility.closeSFtpConnection sftpClient.close()");
-//        sftpClient.close();
         logger.info("SftpUtility.closeSFtpConnection sshClient.disconnect()");
-        sshClient.disconnect();
+        if (sshClient.isConnected()) {
+            sshClient.disconnect();
+        }
+        else {
+            logger.info("SftpUtility.closeSFtpConnection sshClient not connected");
+        }
     }
 
     public static void sFtpSetPreservedAttributes(boolean value) {
