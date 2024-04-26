@@ -38,14 +38,21 @@ public class FileUtility {
     }
 
     public static String[] dir(String pathName) throws IOException{
-        return dir(pathName, false);
+        return dir(pathName, false, false);
     }
 
-    public static String[] dir(String pathName, boolean recursive) throws IOException{
+    public static String[] dir(String pathName, boolean recursive, boolean caseSensitive) throws IOException{
         var directoryName = getFilePath(pathName);
         if ("".equals(directoryName)) directoryName = ".";
         File directory = new File(directoryName);
-        IOFileFilter filter = new WildcardFileFilter(getFileName(pathName), IOCase.INSENSITIVE);
+        IOFileFilter filter;
+
+        if(caseSensitive) {
+            filter = new WildcardFileFilter(getFileName(pathName), IOCase.SENSITIVE);
+        } else {
+            filter = new WildcardFileFilter(getFileName(pathName), IOCase.INSENSITIVE);
+        }
+
         Collection<File> files;
 
         if (recursive) {
@@ -65,13 +72,22 @@ public class FileUtility {
         return fileNames;
     }
 
+    public static String onlyOneFileInDirectoryList(String fileSpec, String errorMessage, Boolean caseSensitive) throws Exception {
+        if(caseSensitive) {
+            String[] fileList = dir(fileSpec, false, true);
+            return onlyOneFileInDirectoryList(fileList, errorMessage);
+        } else {
+            String[] fileList = dir(fileSpec);
+            return onlyOneFileInDirectoryList(fileList, errorMessage);
+        }
+    }
+
     public static String onlyOneFileInDirectoryList(String fileSpec, String errorMessage) throws Exception {
-        String[] fileList = dir(fileSpec);
-        return onlyOneFileInDirectoryList(fileList, errorMessage);
+        return onlyOneFileInDirectoryList(fileSpec, errorMessage, false);
     }
 
     public static String onlyOneFileInDirectoryList(String fileSpec) throws Exception {
-        String[] fileList = dir(fileSpec);
+        String[] fileList = dir(fileSpec, false, false);
 
         if (fileList.length != 1) {
             throw new RuntimeException("Only One File For FileSpec " + fileSpec + ". There are " + fileList.length + " files");

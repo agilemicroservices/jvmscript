@@ -150,7 +150,7 @@ public class HttpUtil
         try
         {
             responseContent = receiveString(channel);
-            logger.info("GET {} completed successfully.", urlString);
+            logger.debug("GET {} completed successfully.", urlString);
         }
         catch (RedirectedException e)
         {
@@ -253,7 +253,7 @@ public class HttpUtil
             IOUtils.write(content, writer);
             writer.close();
 
-            logger.info("URL {} downloaded to file {}", urlString, fileName);
+            logger.debug("URL {} downloaded to file {}", urlString, fileName);
         }
         catch (FileNotFoundException e)
         {
