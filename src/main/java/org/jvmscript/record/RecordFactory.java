@@ -107,7 +107,7 @@ public class RecordFactory {
                 if (beanField.field.getType() == double.class || beanField.field.getType() == float.class) {
                     beanField.field.set(bean, 0.00);
                 }
-                else if (beanField.field.getType() == int.class) {
+                else if (beanField.field.getType() == int.class || beanField.field.getType() == long.class){
                     beanField.field.set(bean, 0);
                 }
                 else {
