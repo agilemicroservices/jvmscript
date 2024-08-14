@@ -30,11 +30,11 @@ public class RecordFactory {
 
     private static final Logger logger = LogManager.getLogger(RecordFactory.class);
 
-    public String[] getDataFields(Object object) {
+    public static String[] getDataFields(Object object) {
         return getDataFields(object.getClass());
     }
 
-    public String[] getDataFields(Class clazz) {
+    public static String[] getDataFields(Class clazz) {
         ArrayList<String> fieldNames = new ArrayList<>();
         do {
             for (Field field : clazz.getDeclaredFields()) {
@@ -49,11 +49,11 @@ public class RecordFactory {
         return fieldNames.toArray(new String[0]);
     }
 
-    public String getEntityName(Object object) {
+    public static String getEntityName(Object object) {
         return getEntityName(object.getClass());
     }
 
-    public String getEntityName(Class clazz) {
+    public static String getEntityName(Class clazz) {
         var annotation = (Entity) clazz.getAnnotation(Entity.class);
         return annotation.name();
     }
