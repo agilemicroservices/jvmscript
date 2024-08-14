@@ -11,7 +11,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.util.ArrayList;
 import java.util.Locale;
+
+import jakarta.persistence.Entity;
 
 public class RecordFactory {
 
@@ -26,6 +29,34 @@ public class RecordFactory {
     public int headerNameRow = 0;
 
     private static final Logger logger = LogManager.getLogger(RecordFactory.class);
+
+    public String[] getDataFields(Object object) {
+        return getDataFields(object.getClass());
+    }
+
+    public String[] getDataFields(Class clazz) {
+        ArrayList<String> fieldNames = new ArrayList<>();
+        do {
+            for (Field field : clazz.getDeclaredFields()) {
+                DataField annotation = (DataField) field.getAnnotation(DataField.class);
+                if (annotation != null) {
+                    fieldNames.add(annotation.name());
+                }
+            }
+            clazz = clazz.getSuperclass();
+
+        } while (clazz != null);
+        return fieldNames.toArray(new String[0]);
+    }
+
+    public String getEntityName(Object object) {
+        return getEntityName(object.getClass());
+    }
+
+    public String getEntityName(Class clazz) {
+        var annotation = (Entity) clazz.getAnnotation(Entity.class);
+        return annotation.name();
+    }
 
     void setBeanField(Object bean, BeanField beanField, String value) throws Exception {
 
