@@ -408,6 +408,7 @@ public class DelimitedRecordFactory extends RecordFactory {
         parserSettings.setAutoConfigurationEnabled(true);
         parserSettings.setHeaderExtractionEnabled(false);
         parserSettings.setCommentProcessingEnabled(false);
+        parserSettings.setMaxColumns(5000);
 
         CsvParser parser = new CsvParser(parserSettings);
 
