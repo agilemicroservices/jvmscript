@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.io.File;
 import java.util.HashMap;
 
 public class JsonUtility {
@@ -29,6 +30,11 @@ public class JsonUtility {
     public static void initialize(boolean failUnknown) {
         failOnUnknowProperties = failUnknown;
         initialize();
+    }
+
+    public static void jsonCreateMetaFile(Object object, String fileName) throws Exception {
+        if (!initialized) initialize();
+        objectWriter.writeValue(new File(fileName), object);
     }
 
     public static String jsonSerialize(Object object) throws Exception{

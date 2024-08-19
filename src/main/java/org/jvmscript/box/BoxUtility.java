@@ -13,7 +13,7 @@ import java.util.stream.StreamSupport;
 
 public class BoxUtility {
 
-    private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(SftpUtility.class);
+    private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(BoxUtility.class);
 
     public static BoxDeveloperEditionAPIConnection api;
     public static Metadata metadata;
