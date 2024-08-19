@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Map;
 
 public class JsonUtility {
     static boolean initialized;
@@ -32,9 +33,18 @@ public class JsonUtility {
         initialize();
     }
 
-    public static void jsonCreateMetaFile(Object object, String fileName) throws Exception {
+    public static void jsonCreateMetaFile(Map<String, Object> metaData) throws Exception {
         if (!initialized) initialize();
-        objectWriter.writeValue(new File(fileName), object);
+
+        String fileName = (String) metaData.get("fileName");
+
+        if (fileName != null && fileName.endsWith(".csv")) {
+            String metaFileName = fileName.replace(".csv", ".meta");
+
+            objectMapper.writeValue(new File(metaFileName), metaData);
+        } else {
+            throw new IllegalArgumentException("File name is missing or doesn't have a .csv extension");
+        }
     }
 
     public static String jsonSerialize(Object object) throws Exception{
