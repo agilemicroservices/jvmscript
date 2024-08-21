@@ -9,6 +9,7 @@ import org.jvmscript.sftp.SftpUtility;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.StreamSupport;
 
 public class BoxUtility {
@@ -22,6 +23,10 @@ public class BoxUtility {
         boxOpenConnection("box.json");
     }
 
+    public static void boxOpenConnectionJava() throws Exception{
+        boxOpenConnectionJavaDev("box.json");
+    }
+
     public static void boxOpenConnection(String boxConfigFile) throws Exception{
         InputStream inputStream = BoxUtility.class.getResourceAsStream("/" + boxConfigFile);
         Reader reader = new InputStreamReader(inputStream);
@@ -29,6 +34,20 @@ public class BoxUtility {
         IAccessTokenCache tokenCache = new InMemoryLRUAccessTokenCache(100);
         api = BoxDeveloperEditionAPIConnection.getAppEnterpriseConnection(boxConfig, tokenCache);
         reader.close();
+    }
+
+    public static void boxOpenConnectionJavaDev(String boxConfigFile) throws Exception{
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("/" + boxConfigFile);
+        Reader reader = new InputStreamReader(inputStream);
+        BoxConfig boxConfig = BoxConfig.readFrom(reader);
+        IAccessTokenCache tokenCache = new InMemoryLRUAccessTokenCache(100);
+        api = BoxDeveloperEditionAPIConnection.getAppEnterpriseConnection(boxConfig, tokenCache);
+        reader.close();
+    }
+
+    public static void boxOpenConnectionJava(BoxConfig boxConfig) throws Exception{
+        IAccessTokenCache tokenCache = new InMemoryLRUAccessTokenCache(100);
+        api = BoxDeveloperEditionAPIConnection.getAppEnterpriseConnection(boxConfig, tokenCache);
     }
 
     public static String boxUpLoadFile(String localFile, String boxFolderId) throws Exception{

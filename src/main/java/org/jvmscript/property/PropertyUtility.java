@@ -1,9 +1,6 @@
 package org.jvmscript.property;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 
 public class PropertyUtility {
@@ -13,7 +10,9 @@ public class PropertyUtility {
     public static void propertyOpenFileClassPath(String propertyFile) throws IOException {
         properties = new Properties();
         InputStream inputStream = PropertyUtility.class.getResourceAsStream("/" + propertyFile);
-        properties.load(inputStream);
+        if (inputStream == null) {
+            throw new FileNotFoundException("Property file not found in classpath: " + propertyFile);
+        }        properties.load(inputStream);
         inputStream.close();
     }
 
