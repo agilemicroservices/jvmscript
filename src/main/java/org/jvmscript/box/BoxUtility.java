@@ -17,8 +17,6 @@ public class BoxUtility {
     private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(BoxUtility.class);
 
     public static BoxDeveloperEditionAPIConnection api;
-    public static Metadata metadata;
-    public static BoxFile.Info boxFileInfo;
     public static void boxOpenConnection() throws Exception{
         boxOpenConnection("box.json");
     }
@@ -50,25 +48,54 @@ public class BoxUtility {
         api = BoxDeveloperEditionAPIConnection.getAppEnterpriseConnection(boxConfig, tokenCache);
     }
 
-    public static String boxUpLoadFile(String localFile, String boxFolderId) throws Exception{
-        var file = new File(localFile);
-        var fileInsputStream = new FileInputStream(file);
-        var folder = new BoxFolder(api, boxFolderId);
-        var name = file.getName();
-        boxFileInfo = folder.uploadFile(fileInsputStream, name);
-        fileInsputStream.close();
+    public static String boxUpLoadFile(String localFile, String boxFolderId) throws Exception {
+        File file = new File(localFile);
 
-        var localSha1 = FileUtility.fileCalculateSHA1(localFile);
-        if (!localSha1.equals(boxFileInfo.getSha1())) {
-            throw new Exception("SHA1 does not match for file " + localFile);
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            BoxFolder folder = new BoxFolder(api, boxFolderId);
+            String name = file.getName();
+            BoxFile.Info boxFileInfo = folder.uploadFile(fileInputStream, name);
+
+            String localSha1 = FileUtility.fileCalculateSHA1(localFile);
+            if (!localSha1.equals(boxFileInfo.getSha1())) {
+                throw new Exception("SHA1 does not match for file " + localFile);
+            } else {
+                logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, boxFileInfo.getID(), boxFolderId);
+                return boxFileInfo.getID();
+            }
+        } catch (IOException e) {
+            throw new Exception("Error uploading file to Box: " + e.getMessage(), e);
         }
-
-        logger.info("Uploaded file {} ID {} to Box Folder {}", localFile, boxFileInfo.getID(), boxFolderId);
-        return boxFileInfo.getID();
     }
 
+    private static ThreadLocal<BoxFile.Info> threadLocalBoxFileInfo = new ThreadLocal<>();
+
     public static String boxGetFileSha1() {
-        return boxFileInfo.getSha1();
+        BoxFile.Info boxFileInfo = threadLocalBoxFileInfo.get();
+        if (boxFileInfo != null) {
+            return boxFileInfo.getSha1();
+        } else {
+            throw new IllegalStateException("boxFileInfo is not initialized");
+        }
+    }
+
+    public static void setBoxFileInfo(BoxFile.Info fileInfo) {
+        threadLocalBoxFileInfo.set(fileInfo);
+    }
+
+    public static void clearBoxFileInfo() {
+        threadLocalBoxFileInfo.remove();
+    }
+
+    public static BoxFile.Info boxGetFileInfo(String fileId) {
+        try {
+            BoxFile boxFile = new BoxFile(api, fileId);
+            BoxFile.Info boxFileInfo = boxFile.getInfo();
+            threadLocalBoxFileInfo.set(boxFileInfo);  // Store in thread-local variable
+            return boxFileInfo;
+        } finally {
+            clearBoxFileInfo();
+        }
     }
 
     public static String boxCreateFolder(String folderName, String parentFolderId) {
@@ -77,15 +104,6 @@ public class BoxUtility {
         return childFolderInfo.getID();
     }
 
-    public static BoxFile.Info boxGetFileInfo(String fileId) {
-        BoxFile boxFile = new BoxFile(api, fileId);
-        boxFileInfo =  boxFile.getInfo();
-        return boxFileInfo;
-    }
-
-    public static BoxFile.Info getBoxFileInfo() {
-        return boxFileInfo;
-    }
     public static String boxCreateMonthFolder(String parentFolderId) {
         var folderName = DateTimeUtility.getDateTimeString("yyyy-MM");
         return boxCreateMonthFolder(parentFolderId, folderName);
@@ -130,6 +148,34 @@ public class BoxUtility {
         return list;
     }
 
+    private static ThreadLocal<Metadata> threadLocalMetadata = ThreadLocal.withInitial(Metadata::new);
+
+    public static void boxAddMetaData(String field, String value) throws Exception {
+        Metadata metadata = threadLocalMetadata.get();
+        metadata.add(field, value);
+    }
+
+    public static void boxCreateMetaData(String fileId, String templateId) {
+        try {
+            Metadata metadata = threadLocalMetadata.get();
+            BoxFile boxfile = new BoxFile(api, fileId);
+            boxfile.createMetadata(templateId, "enterprise", metadata);
+        } finally {
+            threadLocalMetadata.remove();
+        }
+    }
+
+
+    public static void boxCreateFolderMetaData(String folderId, String templateId) {
+        try {
+            Metadata metadata = threadLocalMetadata.get();
+            BoxFolder folder = new BoxFolder(api, folderId);
+            folder.setMetadata(templateId, "enterprise", metadata);
+        } finally {
+            threadLocalMetadata.remove();
+        }
+    }
+
     public static List<MetadataTemplate> boxGetTemplates() {
         var templates = MetadataTemplate.getEnterpriseMetadataTemplates("enterprise", api);
         var templateList = new ArrayList<MetadataTemplate>();
@@ -144,31 +190,6 @@ public class BoxUtility {
     public static MetadataTemplate boxGetTemplatesById(String templateId) {
         var template = MetadataTemplate.getMetadataTemplateByID(api, templateId);
         return template;
-    }
-
-    public static void boxAddMetaData(String field, String value) throws Exception{
-        if (metadata == null) {
-            metadata = new Metadata();
-        }
-        metadata.add(field, value);
-
-    }
-
-    public static void boxCreateMetaData(String fileId, String templateId) {
-        var boxfile  = new BoxFile(api, fileId);
-        boxfile.createMetadata(templateId,"enterprise", metadata);
-        metadata = null;
-    }
-
-
-    public static void boxCreateFolderMetaData(String folderId, String templateId) {
-        BoxFolder folder = new BoxFolder(api, folderId);
-        var info = folder.getInfo();
-        folder.setMetadata(templateId, "enterprise", metadata);
-        metadata = null;
-    }
-    public static void boxClearMetaData() {
-        metadata = null;
     }
 
     public static void main(String[] args) {
