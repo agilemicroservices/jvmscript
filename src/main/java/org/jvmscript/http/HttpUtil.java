@@ -297,7 +297,7 @@ public class HttpUtil
                 headerValue += ":" + port;
             }
             headers.add(HttpHeaders.Names.HOST, headerValue);
-            System.out.println("HOST=" + headerValue);
+            logger.debug("HOST= {}.", headerValue);
         }
 
         if (!headers.contains(HttpHeaders.Names.CONNECTION))
