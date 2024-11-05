@@ -17,6 +17,7 @@ public class JamsUtility {
     private static final Logger logger = LogManager.getLogger(JamsUtility.class);
 
     public static String access_token;
+    public static Long tokenExpiryTime = 0L;
     private static ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     public static String server;
 
@@ -39,6 +40,11 @@ public class JamsUtility {
     }
 
     public static void jamsLogin(String serverInput, String userame, String password) throws IOException {
+        if (access_token != null && !isTokenExpired()) {
+            logger.info("Using existing token");
+            return;
+        }
+
         server = serverInput;
         String url = server + "/JAMS/api/authentication/login";
 
@@ -52,11 +58,16 @@ public class JamsUtility {
         logger.info("JamsUtility.jamsLogin server {} username {}", serverInput, userame);
 
         String loginResponseString = httpPost(url,
-                                              mapper.writeValueAsString(login),
-                                              headerMap );
+                mapper.writeValueAsString(login),
+                headerMap );
 
         LoginResponse loginResponse = mapper.readValue(loginResponseString, LoginResponse.class);
         access_token = loginResponse.access_token;
+        tokenExpiryTime = System.currentTimeMillis() + (Integer.parseInt(loginResponse.expires_in) * 1000L);
+    }
+
+    private static boolean isTokenExpired() {
+        return System.currentTimeMillis() >= tokenExpiryTime;
     }
 
     private static Variable getVariable(String variableName) throws Exception {
