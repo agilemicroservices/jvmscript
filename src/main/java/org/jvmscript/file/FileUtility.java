@@ -4,6 +4,7 @@ import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
 import net.lingala.zip4j.model.enums.CompressionLevel;
 import net.lingala.zip4j.model.enums.CompressionMethod;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -553,6 +554,25 @@ public class FileUtility {
         out.close();
         gzIn.close();
         logger.info("unGzipFile filename {}", zipFilename);
+    }
+
+    public static void unBzip2File(String bz2Filename) throws IOException {
+        String outputFilename = bz2Filename.replace(".bz2", "");
+        try (
+                FileInputStream fileInputStream = new FileInputStream(bz2Filename);
+                BZip2CompressorInputStream bzIn = new BZip2CompressorInputStream(fileInputStream);
+                FileOutputStream fileOutputStream = new FileOutputStream(outputFilename)
+        ) {
+            byte[] buffer = new byte[4096]; // Experiment with different sizes if needed
+            int n;
+            while ((n = bzIn.read(buffer)) != -1) {
+                fileOutputStream.write(buffer, 0, n);
+            }
+            logger.info("Unzipped file: {}", bz2Filename);
+        } catch (IOException e) {
+            logger.error("Failed to unzip file {}: {}", bz2Filename, e.getMessage());
+            throw e;  // Re-throwing if you want the calling method to handle it
+        }
     }
 
     public static String zipFile(String filename) throws Exception {
