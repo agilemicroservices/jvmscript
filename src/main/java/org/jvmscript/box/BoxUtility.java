@@ -98,6 +98,64 @@ public class BoxUtility {
         }
     }
 
+    public static List<String> boxGetFileIdsInFolder(String folderId) {
+        BoxFolder folder = new BoxFolder(api, folderId);
+        List<String> fileIds = new ArrayList<>();
+        for (BoxItem.Info itemInfo : folder) {
+            if (itemInfo instanceof BoxFile.Info) {
+                fileIds.add(itemInfo.getID());
+            }
+        }
+        return fileIds;
+    }
+
+    public static void boxDownloadFileById(String fileId, String localFilePath) throws Exception {
+        BoxFile file = new BoxFile(api, fileId);
+        try (FileOutputStream outputStream = new FileOutputStream(localFilePath)) {
+            file.download(outputStream);
+            logger.info("File downloaded to {}", localFilePath);
+        } catch (IOException e) {
+            throw new Exception("Error downloading file from Box: " + e.getMessage(), e);
+        }
+    }
+
+    public static void markFileAsProcessed(String fileId) {
+        BoxFile file = new BoxFile(api, fileId);
+        Metadata metadata = new Metadata();
+        metadata.add("/status", "processed");
+
+        try {
+            file.createMetadata(metadata);
+            logger.info("Marked file with ID {} as processed", fileId);
+        } catch (BoxAPIException e) {
+            logger.error("Failed to add metadata to file with ID {} - {}", fileId, e.getMessage());
+        }
+    }
+    public static List<String> getUnprocessedFileIds(String folderId) {
+        BoxFolder folder = new BoxFolder(api, folderId);
+        List<String> unprocessedFileIds = new ArrayList<>();
+        for (BoxItem.Info itemInfo : folder) {
+            if (itemInfo instanceof BoxFile.Info) {
+                BoxFile file = new BoxFile(api, itemInfo.getID());
+                try {
+                    Metadata metadata = file.getMetadata();
+                    String status = metadata.getString("/status");
+                    if (!"processed".equals(status)) {
+                        unprocessedFileIds.add(itemInfo.getID());
+                    }
+                } catch (BoxAPIException e) {
+                    if (e.getResponseCode() == 404) {
+                        unprocessedFileIds.add(itemInfo.getID());
+                    } else {
+                        logger.error("Error fetching metadata for file with ID {} - {}", itemInfo.getID(), e.getMessage());
+                    }
+                }
+            }
+        }
+        return unprocessedFileIds;
+    }
+
+
     public static String boxCreateFolder(String folderName, String parentFolderId) {
         BoxFolder parentFolder = new BoxFolder(api, parentFolderId);
         BoxFolder.Info childFolderInfo = parentFolder.createFolder(folderName);

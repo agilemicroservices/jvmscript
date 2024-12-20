@@ -213,7 +213,7 @@ public final class PgpUtility {
         ) {
             PGPSecretKeyRingCollection keyRings = new PGPSecretKeyRingCollection(keyDecoderInputStream, new JcaKeyFingerprintCalculator());
             PBESecretKeyDecryptor keyDecryptor = new JcePBESecretKeyDecryptorBuilder()
-                    .setProvider("BC")
+                    .setProvider(PROVIDER)
                     .build(password.toCharArray());
 
             for (PGPSecretKeyRing keyRing : keyRings) {
