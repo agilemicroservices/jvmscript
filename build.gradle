@@ -137,9 +137,10 @@ dependencies {
 
     api group: 'com.lmax', name: 'disruptor', version: '3.4.4'
 
-    api group: 'org.bouncycastle', name: 'bcpg-jdk18on', version: '1.78.1'
-    api group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.78.1'
-    api group: 'org.bouncycastle', name: 'bcprov-ext-jdk18on', version: '1.78.1'
+    api group: 'org.bouncycastle', name: 'bcpg-jdk15on', version: '1.70'
+    api group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.70'
+    api group: 'org.bouncycastle', name: 'bcprov-ext-jdk15on', version: '1.70'
+
 
 
     api group: 'org.sql2o', name: 'sql2o', version: '1.5.4'
