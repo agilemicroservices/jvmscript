@@ -12,6 +12,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.sql2o.Connection;
 import org.sql2o.Query;
 import org.sql2o.Sql2o;
+import org.sql2o.converters.Convert;
 import org.sql2o.converters.Converter;
 import org.sql2o.data.Column;
 import org.sql2o.data.Row;
@@ -38,6 +39,24 @@ public class SqlUtility {
 
     public static String nullValue = "";
 
+    // Custom converter for char
+    public static class CharConverter implements Converter<Character> {
+        @Override
+        public Character convert(Object value) {
+            if (value == null) return '\0'; // Default for null
+            if (value instanceof String) {
+                String str = (String) value;
+                return str.isEmpty() ? '\0' : str.charAt(0);
+            }
+            throw new IllegalArgumentException("Cannot convert " + value + " to char");
+        }
+
+        @Override
+        public Object toDatabaseParam(Character value) {
+            return value.toString(); // Convert char back to String for database
+        }
+    }
+
     public static void openSqlConnection() throws IOException {
         openSqlConnection("application.properties");
     }
@@ -59,6 +78,7 @@ public class SqlUtility {
         mappers.put(LocalDate.class, new LocalDateConverter());
 
         sql2o = new Sql2o(dbUrl, user, password, new NoQuirks((mappers)));
+        Convert.registerConverter(char.class, new CharConverter());
         connection = sql2o.open();
     }
 
