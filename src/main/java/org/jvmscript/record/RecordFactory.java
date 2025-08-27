@@ -101,7 +101,16 @@ public class RecordFactory {
                         beanField.field.set(bean, 0.00);
                     }
                     else {
-                        beanField.field.set(bean, Double.valueOf(value));
+                        String lower = value.toLowerCase(java.util.Locale.ROOT);
+
+                        var floatValue =  switch (lower) {
+                            case "nan" -> Double.NaN;
+                            case "inf", "+inf", "infinity", "+infinity" -> Double.POSITIVE_INFINITY;
+                            case "-inf", "-infinity" -> Double.NEGATIVE_INFINITY;
+                            default -> Double.parseDouble(lower);
+                        };
+
+                        beanField.field.set(bean, floatValue);
                     }
                 } else if (beanField.field.getType() == Float.class || beanField.field.getType() == float.class) {
                     value = cleanNumberString(value);
@@ -109,7 +118,16 @@ public class RecordFactory {
                         beanField.field.set(bean, 0.00);
                     }
                     else {
-                        beanField.field.set(bean, Float.valueOf(value));
+                        String lower = value.toLowerCase(java.util.Locale.ROOT);
+
+                        var floatValue =  switch (lower) {
+                            case "nan" -> Float.NaN;
+                            case "inf", "+inf", "infinity", "+infinity" -> Float.POSITIVE_INFINITY;
+                            case "-inf", "-infinity" -> Float.NEGATIVE_INFINITY;
+                            default -> Float.parseFloat(lower);
+                        };
+
+                        beanField.field.set(bean, floatValue);
                     }
                 } else if (beanField.field.getType() == BigDecimal.class) {
                     value = cleanNumberString(value);
