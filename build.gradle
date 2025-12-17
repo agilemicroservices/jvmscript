@@ -4,18 +4,23 @@ plugins {
 }
 
 group = 'org.jvmscript'
-version = '4.0-SNAPSHOT'
+version = '5.0-SNAPSHOT'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
     withSourcesJar()
     withJavadocJar()
 }
 
 ext {
     spockVersion = '2.4-M4-groovy-4.0'
-    groovyVersion = '4.0.26'
+    groovyVersion = '4.0.29'
+    jacksonVersion = '2.19.1'
+    awsSdkVersion = '2.29.51'
+    bouncycastleVersion = '1.83'
+    poiVersion = '5.4.1'
+    log4jVersion = '2.24.3'
 }
 
 repositories {
@@ -26,71 +31,86 @@ repositories {
 configurations.all {
     resolutionStrategy.eachDependency { details ->
         if (details.requested.group == 'org.apache.logging.log4j') {
-            details.useVersion '2.19.0'
+            details.useVersion log4jVersion
         }
     }
-    all*.exclude group: 'xml-apis', module: 'xml-apis'
+    exclude group: 'xml-apis', module: 'xml-apis'
 }
 
 dependencies {
-    api 'jakarta.mail:jakarta.mail-api:2.1.1'
-    api 'org.eclipse.angus:angus-mail:2.0.1'
-    api 'org.eclipse.angus:smtp:2.0.1'
+    // Mail
+    api 'jakarta.mail:jakarta.mail-api:2.1.3'
+    api 'org.eclipse.angus:angus-mail:2.0.3'
+    api 'org.eclipse.angus:smtp:2.0.3'
 
-    implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
-    implementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.19.0'
+    // Logging
+    implementation "org.apache.logging.log4j:log4j-core:${log4jVersion}"
+    implementation "org.apache.logging.log4j:log4j-slf4j2-impl:${log4jVersion}"
 
+    // Apache Commons
     api 'commons-io:commons-io:2.19.0'
-    api 'org.apache.commons:commons-lang3:3.12.0'
-    api 'org.apache.commons:commons-compress:1.26.2'
-    api 'org.apache.commons:commons-exec:1.3'
-    api 'commons-cli:commons-cli:1.5.0'
-    api 'commons-net:commons-net:3.9.0'
-    api 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+    api 'org.apache.commons:commons-lang3:3.17.0'
+    api 'org.apache.commons:commons-compress:1.27.1'
+    api 'org.apache.commons:commons-exec:1.4.0'
+    api 'commons-cli:commons-cli:1.9.0'
+    api 'commons-net:commons-net:3.11.1'
 
+    // Jakarta
+    api 'jakarta.persistence:jakarta.persistence-api:3.2.0'
+
+    // HTTP
     api 'org.apache.httpcomponents:httpclient:4.5.14'
     api 'org.apache.httpcomponents:httpmime:4.5.14'
 
-    api 'org.apache.poi:poi:5.2.3'
-    api('org.apache.poi:poi-ooxml:5.4.1') {
+    // Apache POI
+    api "org.apache.poi:poi:${poiVersion}"
+    api("org.apache.poi:poi-ooxml:${poiVersion}") {
         exclude group: 'stax', module: 'stax-api'
     }
 
-    api 'com.fasterxml.jackson.core:jackson-core:2.19.1'
-    api 'com.fasterxml.jackson.core:jackson-annotations:2.19.1'
-    api 'com.fasterxml.jackson.core:jackson-annotations:2.19.1'
-    api 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
-    api 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1'
+    // Jackson
+    api "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    api "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    api "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
 
+    // Parsing & Compression
     api 'com.univocity:univocity-parsers:2.9.1'
-    api 'net.lingala.zip4j:zip4j:2.11.3'
+    api 'net.lingala.zip4j:zip4j:2.11.5'
 
-    implementation 'com.hierynomus:sshj:0.34.0'
+    // SSH
+    implementation 'com.hierynomus:sshj:0.39.0'
 
-    api 'com.lmax:disruptor:3.4.4'
+    // Disruptor
+    api 'com.lmax:disruptor:4.0.0'
 
-    api 'org.bouncycastle:bcpg-jdk15on:1.70'
-    api 'org.bouncycastle:bcprov-jdk15on:1.70'
-    api 'org.bouncycastle:bcprov-ext-jdk15on:1.70'
+    // Bouncycastle (updated to jdk18on)
+    api "org.bouncycastle:bcpg-jdk18on:${bouncycastleVersion}"
+    api "org.bouncycastle:bcprov-jdk18on:${bouncycastleVersion}"
 
-    api 'org.sql2o:sql2o:1.5.4'
+    // Database
+    api 'org.sql2o:sql2o:1.8.0'
 
-    api 'io.netty:netty-all:4.1.110.Final'
+    // Netty
+    api 'io.netty:netty-all:4.1.118.Final'
 
-    api 'software.amazon.awssdk:s3:2.9.26'
-    api 'software.amazon.awssdk:protocol-core:2.9.26'
+    // AWS SDK
+    api "software.amazon.awssdk:s3:${awsSdkVersion}"
+    api "software.amazon.awssdk:protocol-core:${awsSdkVersion}"
 
-    api 'com.box:box-java-sdk:4.6.0'
+    // Box
+    api 'com.box:box-java-sdk:4.14.0'
 
+    // Groovy
     api "org.apache.groovy:groovy:${groovyVersion}"
 
     // Testing
     testImplementation("org.spockframework:spock-core:${spockVersion}") {
         exclude group: 'org.codehaus.groovy'
     }
-    testImplementation "org.hamcrest:hamcrest:2.2"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:5.10.0"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.10.0"
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.4'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.4'
 }
 
 publishing {
@@ -100,7 +120,6 @@ publishing {
         }
     }
 }
-
 
 test {
     useJUnitPlatform()

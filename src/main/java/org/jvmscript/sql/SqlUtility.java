@@ -100,7 +100,9 @@ public class SqlUtility {
     }
 
     public static void closeSqlConnection() {
-        connection.close();
+        if (connection != null) {
+            connection.close();
+        }
     }
 
     public static void exportSqlFileQueryToFile(String sqlQueryFilename, String outputFilename, Object... params) throws Exception {
