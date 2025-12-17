@@ -97,19 +97,4 @@ class FixedWidthRecordFactorySpecification extends Specification {
         then:
         stringValue == '2016010120160101-12100010999990111TODAY     !!END!!'
     }
-
-//    def "Testing  BeanFactory.writeFixedWidthBeanListToFile"() {
-//
-//        when:
-//        def bean = new FixedWidthTestBean()
-//        bean.dateTime = LocalDateTime.of(LocalDate.of(2016,01, 01), LocalTime.MIDNIGHT)
-//        bean.date = LocalDate.of(2016,01, 01)
-//        def beanList = new ArrayList<FixedWidthTestBean>()
-//        beanList.add(bean)
-//        String stringValue = fixedWidthRecordFactory.writeFixedWidthBeanListToFile('/dev/fixed_length.txt', beanList)
-//
-//        then:
-//        println 'sucess'
-//    }
-
 }
