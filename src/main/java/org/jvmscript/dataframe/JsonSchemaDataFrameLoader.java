@@ -35,7 +35,7 @@ public class JsonSchemaDataFrameLoader {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    /**
+     /**
      * Schema metadata for a single column
      */
     private static class ColumnSchema {
@@ -268,9 +268,7 @@ public class JsonSchemaDataFrameLoader {
      * Returns only valid data as DataFrame
      */
     public static LoadResult loadCsvWithJsonSchema(String csvPath, String schemaPath) throws IOException {
-        var loadOptions = new LoadOptions();
-        loadOptions.verbose = false;
-        return loadCsvWithJsonSchema(csvPath, schemaPath, loadOptions);
+        return loadCsvWithJsonSchema(csvPath, schemaPath, new LoadOptions());
     }
 
     /**
@@ -435,14 +433,8 @@ public class JsonSchemaDataFrameLoader {
             }
         }
 
-        // Normalize column names
-        for (int i = 0; i < df.width(); i++) {
-            String oldName = df.getColumnsIndex().get(i);
-            String newName = oldName.replace("/ ", "_").replace(" ", "_");
-            if (!oldName.equals(newName)) {
-                df = df.cols(oldName).as(newName);
-            }
-        }
+        // Note: Column names are preserved as-is from CSV to match schema field names
+        // The schema should use the exact CSV header names (with spaces if present)
 
         if (options.verbose) {
             System.out.println("📥 Loaded " + df.height() + " rows from CSV");
@@ -825,11 +817,11 @@ public class JsonSchemaDataFrameLoader {
                     .orElse(null);
 
             if (firstWithData != null) {
-                // Write header with original columns + error info
+                // Write header with original columns + error info (properly escaped)
                 List<String> headers = new ArrayList<>(firstWithData.rowData.keySet());
                 headers.add("_error_row_number");
                 headers.add("_error_reason");
-                writer.write(String.join(",", headers));
+                writer.write(headers.stream().map(JsonSchemaDataFrameLoader::escapeCSV).collect(Collectors.joining(",")));
                 writer.newLine();
 
                 // Write each bad row
