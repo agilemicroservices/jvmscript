@@ -4,40 +4,62 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.networknt.schema.*;
+import de.siegmar.fastcsv.reader.CsvReader;
+import de.siegmar.fastcsv.reader.CsvRecord;
+import de.siegmar.fastcsv.reader.FieldMismatchStrategy;
 import org.dflib.DataFrame;
 import org.dflib.csv.Csv;
 import org.dflib.json.Json;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.DateTimeException;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Utility for loading CSV data into DFLib DataFrames using JSON Schema for type inference and validation.
+ * Loads CSV data into a DFLib DataFrame using a JSON Schema for typing and validation.
  *
- * Features:
- * - Full Draft 2020-12 schema support via NetworkNT json-schema-validator
- * - Automatic filtering of invalid rows during loading
- * - Separate output files for valid and invalid data
- * - Handles nested "items" schema for array-type schemas
- * - Supports nullable types (type: ["string", "null"])
- * - Custom date/datetime format patterns
- * - Enum validation
- * - Required field validation
- * - Comprehensive error reporting with JSON Pointer paths
+ * <p>Design: <b>validate-then-coerce</b>. The CSV is parsed (FastCSV) into raw string
+ * records; each record is validated against the schema using the <i>raw</i> values, so
+ * malformed input fails validation instead of being silently coerced to {@code 0}/{@code null};
+ * only rows that pass are coerced into the typed DataFrame returned as {@code validData}.
+ *
+ * <p>Features:
+ * <ul>
+ *   <li>Full Draft 2020-12 schema support via NetworkNT (incl. {@code dependentRequired},
+ *       {@code oneOf}, {@code if/then}).</li>
+ *   <li>Parse errors (ragged rows, structural CSV failures) and validation errors are reported
+ *       separately, each with the true physical line number.</li>
+ *   <li>{@code additionalProperties: false} is enforced — unknown CSV columns are surfaced.</li>
+ *   <li>{@code number} → {@code BigDecimal} (financial precision); optional, gated thousands-separator
+ *       handling (a value must be <i>properly grouped</i> to be accepted).</li>
+ *   <li>UTF-8 BOM handled natively by the parser.</li>
+ *   <li>Optional date conversion: a column with {@code format: date}/{@code date-time} or a custom
+ *       {@code x-date-format: <pattern>} is parsed for real, catching impossible dates (e.g. Feb 30)
+ *       that a regex {@code pattern} cannot.</li>
+ * </ul>
  */
 public class JsonSchemaDataFrameLoader {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-     /**
-     * Schema metadata for a single column
-     */
+    // A plain decimal, optionally signed, with optional fraction and exponent.
+    private static final Pattern PLAIN_NUMBER =
+            Pattern.compile("^[+-]?\\d+(\\.\\d+)?([eE][+-]?\\d+)?$");
+    // A properly grouped decimal: 1,234 / 1,234,567.89  (rejects 1,2,3 and the decimal-comma 1,5).
+    private static final Pattern GROUPED_NUMBER =
+            Pattern.compile("^[+-]?\\d{1,3}(,\\d{3})+(\\.\\d+)?$");
+
+    /** Schema metadata for a single column. */
     private static class ColumnSchema {
         String name;
         Class<?> type;
@@ -48,6 +70,9 @@ public class JsonSchemaDataFrameLoader {
         String format;
         Number minimum;
         Number maximum;
+        // Non-null when this column is parsed as a real date/datetime (catches impossible dates).
+        DateTimeFormatter dateFormatter;
+        boolean dateTime; // true => LocalDateTime, false => LocalDate (when dateFormatter != null)
 
         ColumnSchema(String name) {
             this.name = name;
@@ -62,57 +87,46 @@ public class JsonSchemaDataFrameLoader {
         }
     }
 
-    /**
-     * Map JSON Schema types to Java/DFLib types
-     */
-    private static Class<?> mapJsonSchemaType(JsonNode typeNode, JsonNode formatNode, JsonNode patternNode) {
+    /** A parsed CSV record with its true physical starting line number. */
+    private record ParsedRow(long lineNumber, List<String> values) {}
+
+    // ---------------------------------------------------------------------
+    // Type mapping
+    // ---------------------------------------------------------------------
+
+    private static Class<?> mapJsonSchemaType(JsonNode typeNode, JsonNode formatNode) {
         if (typeNode == null) {
             return String.class;
         }
-
         if (typeNode.isArray()) {
             for (JsonNode type : typeNode) {
                 String typeStr = type.asText();
                 if (!"null".equals(typeStr)) {
-                    return mapSingleType(typeStr, formatNode, patternNode);
+                    return mapSingleType(typeStr, formatNode);
                 }
             }
             return String.class;
         }
-
-        String type = typeNode.asText();
-        return mapSingleType(type, formatNode, patternNode);
+        return mapSingleType(typeNode.asText(), formatNode);
     }
 
-    private static Class<?> mapSingleType(String type, JsonNode formatNode, JsonNode patternNode) {
+    private static Class<?> mapSingleType(String type, JsonNode formatNode) {
         switch (type) {
             case "integer":
-                // Check for int64 format -> Long
                 if (formatNode != null && "int64".equals(formatNode.asText())) {
                     return Long.class;
                 }
                 return Integer.class;
             case "number":
-                return Double.class;
+                return BigDecimal.class;
             case "boolean":
                 return Boolean.class;
             case "string":
                 if (formatNode != null) {
-                    String format = formatNode.asText();
-                    switch (format) {
-                        case "date":
-                            return LocalDate.class;
-                        case "date-time":
-                            return LocalDateTime.class;
-                        default:
-                            return String.class;
-                    }
-                }
-                if (patternNode != null) {
-                    String pattern = patternNode.asText();
-                    if (pattern.contains("[0-9]{2}-[0-9]{2}-[0-9]{4}") ||
-                            pattern.contains("[0-9]{4}-[0-9]{2}-[0-9]{2}")) {
-                        return LocalDateTime.class;
+                    switch (formatNode.asText()) {
+                        case "date":      return LocalDate.class;
+                        case "date-time": return LocalDateTime.class;
+                        default:          return String.class;
                     }
                 }
                 return String.class;
@@ -123,34 +137,7 @@ public class JsonSchemaDataFrameLoader {
         }
     }
 
-    /**
-     * Parse a CSV line handling quoted fields
-     */
-    private static String[] parseCSVLine(String line) {
-        List<String> result = new ArrayList<>();
-        boolean inQuotes = false;
-        StringBuilder current = new StringBuilder();
-
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-
-            if (c == '"') {
-                inQuotes = !inQuotes;
-            } else if (c == ',' && !inQuotes) {
-                result.add(current.toString());
-                current = new StringBuilder();
-            } else {
-                current.append(c);
-            }
-        }
-        result.add(current.toString());
-
-        return result.toArray(new String[0]);
-    }
-
-    /**
-     * Extract column schemas from JSON Schema
-     */
+    /** Extract per-column schema metadata. */
     private static Map<String, ColumnSchema> extractColumnSchemas(JsonNode schemaNode) {
         Map<String, ColumnSchema> columnSchemas = new LinkedHashMap<>();
 
@@ -192,13 +179,31 @@ public class JsonSchemaDataFrameLoader {
                 }
             }
 
-            colSchema.type = mapJsonSchemaType(typeNode, formatNode, patternNode);
-
+            colSchema.type = mapJsonSchemaType(typeNode, formatNode);
             if (formatNode != null) {
                 colSchema.format = formatNode.asText();
             }
             if (patternNode != null) {
                 colSchema.pattern = patternNode.asText();
+            }
+
+            // Date handling: a custom x-date-format wins; otherwise honor format: date/date-time.
+            JsonNode dateFmtNode = propSchema.get("x-date-format");
+            if (dateFmtNode != null && !dateFmtNode.asText().isEmpty()) {
+                String fmt = dateFmtNode.asText();
+                // STRICT resolution rejects impossible dates (e.g. Feb 30) that SMART silently adjusts.
+                // STRICT needs year ('u') not year-of-era ('y'), so translate; optional sections like
+                // [.SSS] still parse fine when absent, so timestamps without millis are not false-rejected.
+                colSchema.dateFormatter = DateTimeFormatter.ofPattern(toStrictPattern(fmt))
+                        .withResolverStyle(ResolverStyle.STRICT);
+                colSchema.dateTime = fmt.matches(".*[HhmsSAnN].*");
+                colSchema.type = colSchema.dateTime ? LocalDateTime.class : LocalDate.class;
+                colSchema.format = fmt;
+            } else if (colSchema.type == LocalDate.class) {
+                colSchema.dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
+            } else if (colSchema.type == LocalDateTime.class) {
+                colSchema.dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+                colSchema.dateTime = true;
             }
 
             JsonNode enumNode = propSchema.get("enum");
@@ -215,7 +220,6 @@ public class JsonSchemaDataFrameLoader {
             if (minNode != null) {
                 colSchema.minimum = minNode.numberValue();
             }
-
             JsonNode maxNode = propSchema.get("maximum");
             if (maxNode != null) {
                 colSchema.maximum = maxNode.numberValue();
@@ -227,9 +231,6 @@ public class JsonSchemaDataFrameLoader {
         return columnSchemas;
     }
 
-    /**
-     * Create a JsonSchemaFactory for the appropriate schema version
-     */
     private static JsonSchemaFactory createSchemaFactory(JsonNode schemaNode) {
         JsonNode schemaVersion = schemaNode.get("$schema");
         SpecVersion.VersionFlag version = SpecVersion.VersionFlag.V202012;
@@ -248,14 +249,11 @@ public class JsonSchemaDataFrameLoader {
                 version = SpecVersion.VersionFlag.V202012;
             }
         }
-
         return JsonSchemaFactory.getInstance(version);
     }
 
-    /**
-     * Get the item schema (handles both array wrapper and direct object schema)
-     */
-    private static JsonSchema getItemSchema(JsonNode schemaNode, JsonSchemaFactory factory, SchemaValidatorsConfig config) {
+    private static JsonSchema getItemSchema(JsonNode schemaNode, JsonSchemaFactory factory,
+                                            SchemaValidatorsConfig config) {
         JsonNode itemsNode = schemaNode.get("items");
         if (itemsNode != null) {
             return factory.getSchema(itemsNode, config);
@@ -263,322 +261,349 @@ public class JsonSchemaDataFrameLoader {
         return factory.getSchema(schemaNode, config);
     }
 
-    /**
-     * Load CSV with JSON Schema validation - filters out invalid rows
-     * Returns only valid data as DataFrame
-     */
+    // ---------------------------------------------------------------------
+    // Public load API (signatures unchanged)
+    // ---------------------------------------------------------------------
+
     public static LoadResult loadCsvWithJsonSchema(String csvPath, String schemaPath) throws IOException {
         return loadCsvWithJsonSchema(csvPath, schemaPath, new LoadOptions());
     }
 
-    /**
-     * Load CSV with JSON Schema and custom options - returns LoadResult with valid data and all errors
-     */
     public static LoadResult loadCsvWithJsonSchema(String csvPath, String schemaPath, LoadOptions options)
             throws IOException {
-        // Parse schema from file
         JsonNode schemaNode = mapper.readTree(Files.readString(Paths.get(schemaPath)));
         return loadCsvWithJsonSchema(csvPath, schemaNode, options);
     }
 
     /**
-     * Load CSV with JSON Schema node directly (for YAML or programmatic schemas)
+     * Load CSV against a schema node. Parses with FastCSV, validates each row against the raw
+     * values, then coerces only the rows that pass into the typed {@code validData} DataFrame.
      */
     public static LoadResult loadCsvWithJsonSchema(String csvPath, JsonNode schemaNode, LoadOptions options)
             throws IOException {
 
         LoadResult result = new LoadResult();
-
-        // Extract column schemas
         Map<String, ColumnSchema> columnSchemas = extractColumnSchemas(schemaNode);
+        List<String> schemaCols = new ArrayList<>(columnSchemas.keySet());
 
         if (options.verbose) {
-            System.out.println("📋 Detected Column Schemas:");
+            System.out.println("Detected column schemas:");
             columnSchemas.values().forEach(cs -> System.out.println("  " + cs));
-            System.out.println();
         }
 
-        // Load CSV first (handle parse errors)
-        var loader = Csv.loader();
-        if (options.emptyStringAsNull) {
-            loader.emptyStringIsNull();
+        // Phase 1: parse to raw string records (with true line numbers); ragged rows -> parseErrors.
+        List<ParsedRow> rows = new ArrayList<>();
+        List<String> headers = parseCsv(csvPath, rows, result);
+        if (headers == null) {
+            result.validData = DataFrame.empty(schemaCols.toArray(new String[0]));
+            return result;
+        }
+        Map<String, Integer> headerIdx = new HashMap<>();
+        for (int i = 0; i < headers.size(); i++) {
+            headerIdx.putIfAbsent(headers.get(i), i);
         }
 
-        // Configure column types from schema with safe converters
-        // These create ObjectSeries; we'll compact to primitives after loading
-        for (Map.Entry<String, ColumnSchema> entry : columnSchemas.entrySet()) {
-            String colName = entry.getKey();
-            ColumnSchema colSchema = entry.getValue();
-
-            if (colSchema.type == Integer.class) {
-                loader.col(colName, s -> {
-                    if (s == null || s.trim().isEmpty()) return 0;
-                    try {
-                        return Integer.parseInt(s.trim());
-                    } catch (NumberFormatException e) {
-                        return 0;
-                    }
-                });
-            } else if (colSchema.type == Double.class) {
-                loader.col(colName, s -> {
-                    if (s == null || s.trim().isEmpty()) return 0.0;
-                    try {
-                        return Double.parseDouble(s.trim());
-                    } catch (NumberFormatException e) {
-                        return 0.0;
-                    }
-                });
-            } else if (colSchema.type == Long.class) {
-                loader.col(colName, s -> {
-                    if (s == null || s.trim().isEmpty()) return 0L;
-                    try {
-                        return Long.parseLong(s.trim());
-                    } catch (NumberFormatException e) {
-                        return 0L;
-                    }
-                });
-            } else if (colSchema.type == Boolean.class) {
-                loader.col(colName, s ->
-                        s != null && !s.trim().isEmpty() && Boolean.parseBoolean(s.trim()));
-            }
-            // String and other types use default parsing
-        }
-
-        DataFrame df;
-        try {
-            df = loader.load(csvPath);
-        } catch (Exception e) {
-            if (options.verbose) {
-                System.out.println("⚠️  Standard CSV load failed, using robust line-by-line parser...");
-            }
-
-            List<String> lines = Files.readAllLines(Paths.get(csvPath));
-            if (lines.isEmpty()) {
-                throw new IOException("CSV file is empty");
-            }
-
-            String headerLine = lines.get(0);
-            String[] headers = parseCSVLine(headerLine);
-            int expectedColumns = headers.length;
-
-            List<String[]> goodRows = new ArrayList<>();
-            for (int i = 1; i < lines.size(); i++) {
-                String line = lines.get(i);
-                String[] values = parseCSVLine(line);
-
-                if (values.length == expectedColumns) {
-                    goodRows.add(values);
-                } else {
-                    result.parseErrors.add(new BadRow(i + 1, line,
-                            "Column count mismatch: expected " + expectedColumns + ", found " + values.length));
-                }
-            }
-
-            String tempCsvPath = csvPath + ".tmp";
-            try (var writer = Files.newBufferedWriter(Paths.get(tempCsvPath))) {
-                writer.write(String.join(",", headers));
-                writer.newLine();
-                for (String[] row : goodRows) {
-                    writer.write(String.join(",", row));
-                    writer.newLine();
-                }
-            }
-
-            // Re-use the typed loader for the cleaned temp file
-            df = loader.load(tempCsvPath);
-            Files.delete(Paths.get(tempCsvPath));
-        }
-
-        if (options.verbose && !result.parseErrors.isEmpty()) {
-            System.out.println("⚠️  " + result.parseErrors.size() + " rows failed to parse (malformed CSV)");
-        }
-
-        // Compact numeric columns to primitive series for performance
-        // Get the Series, compact it with a mapper, then merge it back into the DataFrame
-        for (Map.Entry<String, ColumnSchema> entry : columnSchemas.entrySet()) {
-            String colName = entry.getKey();
-            ColumnSchema colSchema = entry.getValue();
-
-            if (!df.getColumnsIndex().contains(colName)) {
-                continue;
-            }
-
-            try {
-                if (colSchema.type == Integer.class) {
-                    var compacted = df.getColumn(colName).compactInt(
-                            v -> v == null ? 0 : ((Number) v).intValue()
-                    );
-                    df = df.cols(colName).merge(compacted);
-                } else if (colSchema.type == Double.class) {
-                    var compacted = df.getColumn(colName).compactDouble(
-                            v -> v == null ? 0.0 : ((Number) v).doubleValue()
-                    );
-                    df = df.cols(colName).merge(compacted);
-                } else if (colSchema.type == Long.class) {
-                    var compacted = df.getColumn(colName).compactLong(
-                            v -> v == null ? 0L : ((Number) v).longValue()
-                    );
-                    df = df.cols(colName).merge(compacted);
-                } else if (colSchema.type == Boolean.class) {
-                    var compacted = df.getColumn(colName).compactBool(
-                            v -> v != null && (Boolean) v
-                    );
-                    df = df.cols(colName).merge(compacted);
-                }
-            } catch (Exception e) {
-                // If compaction fails, keep the column as-is
-                if (options.verbose) {
-                    System.out.println("⚠️  Could not compact column '" + colName + "': " + e.getMessage());
-                }
-            }
-        }
-
-        // Note: Column names are preserved as-is from CSV to match schema field names
-        // The schema should use the exact CSV header names (with spaces if present)
-
-        if (options.verbose) {
-            System.out.println("📥 Loaded " + df.height() + " rows from CSV");
-        }
-
-        // Now validate each row and filter out invalid ones
-        if (options.validateAndFilter) {
-            df = validateAndFilterRows(df, schemaNode, columnSchemas, result, options);
-        }
-
-        result.validData = df;
-
-        // Store references for backward compatibility
-        options.badRows = result.getAllBadRows();
-
-        if (options.verbose) {
-            System.out.println("\n✅ Final result: " + df.height() + " valid rows");
-            if (result.getTotalBadRows() > 0) {
-                System.out.println("❌ Filtered out: " + result.getTotalBadRows() + " bad rows");
-                System.out.println("   • Parse errors: " + result.parseErrors.size());
-                System.out.println("   • Validation errors: " + result.validationErrors.size());
-            }
-            System.out.println();
-        }
-
-        return result;
-    }
-
-    /**
-     * Validate each row against schema and filter out invalid rows
-     */
-    private static DataFrame validateAndFilterRows(DataFrame df, JsonNode schemaNode,
-                                                   Map<String, ColumnSchema> columnSchemas,
-                                                   LoadResult result, LoadOptions options) {
-        if (options.verbose) {
-            System.out.println("🔍 Validating rows against schema...");
-        }
-
-        // Create schema factory and config
+        // Phase 2/3: validate each row against raw values; keep good rows for coercion.
         JsonSchemaFactory factory = createSchemaFactory(schemaNode);
         SchemaValidatorsConfig config = SchemaValidatorsConfig.builder()
                 .formatAssertionsEnabled(true)
                 .build();
-
-        // Get item schema for validating individual rows
         JsonSchema itemSchema = getItemSchema(schemaNode, factory, config);
 
-        List<Integer> validRowIndices = new ArrayList<>();
+        List<Object[]> validRows = new ArrayList<>();
+        for (ParsedRow row : rows) {
+            if (!options.validateAndFilter) {
+                validRows.add(coerceRow(headerIdx, row.values(), schemaCols, columnSchemas, options));
+                continue;
+            }
 
-        // Convert Index to List (Index doesn't have toList())
-        List<String> columns = new ArrayList<>();
-        for (int i = 0; i < df.width(); i++) {
-            columns.add(df.getColumnsIndex().get(i));
-        }
+            ObjectNode rowJson = toRowJson(headers, row.values(), columnSchemas, options);
+            List<BadRow.FieldError> fieldErrors = new ArrayList<>();
 
-        for (int rowIdx = 0; rowIdx < df.height(); rowIdx++) {
-            // Convert row to JSON object
-            ObjectNode rowJson = mapper.createObjectNode();
+            for (ValidationMessage m : itemSchema.validate(rowJson)) {
+                String col = lastToken(m.getInstanceLocation() == null ? null : m.getInstanceLocation().toString());
+                String val = col == null ? null : valueOf(headerIdx, row.values(), col);
+                String schemaLoc = m.getSchemaLocation() == null ? null : m.getSchemaLocation().toString();
+                fieldErrors.add(new BadRow.FieldError(col, val, m.getMessage(), schemaLoc));
+            }
 
-            for (String colName : columns) {
-                if (!columnSchemas.containsKey(colName)) {
-                    continue; // Skip columns not in schema
+            // Semantic date check: regex patterns accept impossible dates (Feb 30); a real parse rejects them.
+            for (ColumnSchema cs : columnSchemas.values()) {
+                if (cs.dateFormatter == null) {
+                    continue;
                 }
-
-                Object value = df.getColumn(colName).get(rowIdx);
-                ColumnSchema colSchema = columnSchemas.get(colName);
-
-                if (value == null) {
-                    rowJson.putNull(colName);
-                } else if (colSchema.type == Integer.class) {
-                    if (value instanceof Number) {
-                        rowJson.put(colName, ((Number) value).intValue());
+                String raw = valueOf(headerIdx, row.values(), cs.name);
+                if (raw == null || raw.trim().isEmpty()) {
+                    continue;
+                }
+                String t = raw.trim();
+                boolean validDate;
+                try {
+                    // STRICT formatter rejects impossible dates; optional sections (e.g. [.SSS]) parse
+                    // fine when absent, so a plain parse is both correct and tolerant of missing millis.
+                    if (cs.dateTime) {
+                        LocalDateTime.parse(t, cs.dateFormatter);
                     } else {
-                        try {
-                            rowJson.put(colName, Integer.parseInt(value.toString().trim()));
-                        } catch (NumberFormatException e) {
-                            rowJson.put(colName, value.toString());
-                        }
+                        LocalDate.parse(t, cs.dateFormatter);
                     }
-                } else if (colSchema.type == Double.class) {
-                    if (value instanceof Number) {
-                        rowJson.put(colName, ((Number) value).doubleValue());
-                    } else {
-                        try {
-                            rowJson.put(colName, Double.parseDouble(value.toString().trim()));
-                        } catch (NumberFormatException e) {
-                            rowJson.put(colName, value.toString());
-                        }
-                    }
-                } else if (colSchema.type == Boolean.class) {
-                    if (value instanceof Boolean) {
-                        rowJson.put(colName, (Boolean) value);
-                    } else {
-                        rowJson.put(colName, Boolean.parseBoolean(value.toString()));
-                    }
-                } else {
-                    rowJson.put(colName, value.toString());
+                    validDate = true;
+                } catch (DateTimeException ex) {
+                    validDate = false;
+                }
+                if (!validDate) {
+                    fieldErrors.add(new BadRow.FieldError(cs.name, raw,
+                            "Invalid date; expected format " + (cs.format != null ? cs.format : "ISO"), null));
                 }
             }
 
-            // Validate this row
-            Set<ValidationMessage> errors = itemSchema.validate(rowJson);
-
-            if (errors.isEmpty()) {
-                validRowIndices.add(rowIdx);
+            if (fieldErrors.isEmpty()) {
+                validRows.add(coerceRow(headerIdx, row.values(), schemaCols, columnSchemas, options));
             } else {
-                // Collect row data for the bad row
-                Map<String, Object> rowData = new LinkedHashMap<>();
-                for (String colName : columns) {
-                    rowData.put(colName, df.getColumn(colName).get(rowIdx));
-                }
-
-                String errorMessages = errors.stream()
-                        .map(ValidationMessage::getMessage)
-                        .collect(Collectors.joining("; "));
-
-                result.validationErrors.add(new BadRow(rowIdx + 2, rowData, errorMessages)); // +2 for 1-based + header
+                result.validationErrors.add(toBadRow(row, headers, fieldErrors));
             }
         }
+
+        result.validData = buildDataFrame(schemaCols, validRows);
+        options.badRows = result.getAllBadRows();
 
         if (options.verbose) {
-            System.out.println("   Valid rows: " + validRowIndices.size());
-            System.out.println("   Invalid rows: " + result.validationErrors.size());
+            System.out.println("Loaded " + result.validData.height() + " valid rows; "
+                    + result.parseErrors.size() + " parse errors, "
+                    + result.validationErrors.size() + " validation errors.");
         }
+        return result;
+    }
 
-        // Return filtered DataFrame with only valid rows
-        if (validRowIndices.size() == df.height()) {
-            return df; // All rows valid
+    // ---------------------------------------------------------------------
+    // Phase 1: parsing
+    // ---------------------------------------------------------------------
+
+    /**
+     * Parse the CSV into raw records using FastCSV. Returns the header field names, or {@code null}
+     * if the file has no records. Rows whose field count differs from the header are routed to
+     * {@code result.parseErrors} (with the true line number) and skipped. A structural parse failure
+     * (e.g. an unterminated quote) is recorded as a parse error and stops parsing; records read
+     * before the failure are retained.
+     */
+    private static List<String> parseCsv(String csvPath, List<ParsedRow> out, LoadResult result)
+            throws IOException {
+        List<String> headers = null;
+        try (CsvReader<CsvRecord> reader = CsvReader.builder()
+                .detectBomHeader(true)
+                .skipEmptyLines(true)
+                // Don't abort on a ragged row; hand it to us so we detect & report it with its line number.
+                .extraFieldStrategy(FieldMismatchStrategy.IGNORE)
+                .missingFieldStrategy(FieldMismatchStrategy.IGNORE)
+                .ofCsvRecord(Paths.get(csvPath))) {
+            for (CsvRecord rec : reader) {
+                List<String> fields = rec.getFields();
+                if (headers == null) {
+                    headers = new ArrayList<>(fields);
+                    continue;
+                }
+                if (fields.size() != headers.size()) {
+                    result.parseErrors.add(new BadRow((int) rec.getStartingLineNumber(),
+                            String.join(",", fields),
+                            "Column count mismatch: expected " + headers.size()
+                                    + ", found " + fields.size()));
+                    continue;
+                }
+                out.add(new ParsedRow(rec.getStartingLineNumber(), fields));
+            }
+        } catch (RuntimeException e) {
+            // FastCSV throws an unchecked parse exception on structural failures (e.g. unterminated
+            // quote). Record it and keep whatever parsed cleanly before the failure point.
+            result.parseErrors.add(new BadRow(-1, "", "CSV parse failed: " + e.getMessage()));
         }
+        return headers;
+    }
 
-        int[] indices = validRowIndices.stream().mapToInt(Integer::intValue).toArray();
-        return df.rows(indices).select();
+    // ---------------------------------------------------------------------
+    // Phase 2: raw-faithful row JSON for validation
+    // ---------------------------------------------------------------------
+
+    private static ObjectNode toRowJson(List<String> headers, List<String> values,
+                                        Map<String, ColumnSchema> cols, LoadOptions options) {
+        ObjectNode o = mapper.createObjectNode();
+        for (int i = 0; i < headers.size(); i++) {
+            String name = headers.get(i);
+            String raw = i < values.size() ? values.get(i) : null;
+            ColumnSchema cs = cols.get(name);
+
+            if (cs == null) {
+                // Unknown column included verbatim so additionalProperties:false can fire.
+                o.put(name, raw);
+                continue;
+            }
+
+            String t = raw == null ? null : raw.trim();
+            if (t == null || t.isEmpty()) {
+                // Blank -> omit the key. Every CSV column is physically present, so emitting an explicit
+                // null would make 'required'/'dependentRequired' (which test key presence) pass spuriously.
+                // Omitting makes those keywords behave correctly; coerceRow still stores null in the frame.
+                continue;
+            }
+
+            Class<?> type = cs.type;
+            if (cs.dateFormatter != null) {
+                o.put(name, raw); // validated by pattern (shape) + semantic parse (validity)
+            } else if (type == Integer.class) {
+                try { o.put(name, Integer.parseInt(t)); }
+                catch (NumberFormatException e) { o.put(name, raw); } // raw -> type/enum fails -> row flagged
+            } else if (type == Long.class) {
+                try { o.put(name, Long.parseLong(t)); }
+                catch (NumberFormatException e) { o.put(name, raw); }
+            } else if (type == BigDecimal.class) {
+                BigDecimal d = parseDecimal(t, options);
+                if (d != null) { o.put(name, d); } else { o.put(name, raw); }
+            } else if (type == Boolean.class) {
+                if (t.equalsIgnoreCase("true") || t.equalsIgnoreCase("false")) {
+                    o.put(name, Boolean.parseBoolean(t));
+                } else {
+                    o.put(name, raw); // not a clean boolean -> let the schema reject it
+                }
+            } else {
+                o.put(name, raw);
+            }
+        }
+        return o;
+    }
+
+    // ---------------------------------------------------------------------
+    // Phase 4: coerce validated rows into typed values
+    // ---------------------------------------------------------------------
+
+    private static Object[] coerceRow(Map<String, Integer> headerIdx, List<String> values,
+                                      List<String> schemaCols, Map<String, ColumnSchema> cols,
+                                      LoadOptions options) {
+        Object[] out = new Object[schemaCols.size()];
+        for (int j = 0; j < schemaCols.size(); j++) {
+            ColumnSchema cs = cols.get(schemaCols.get(j));
+            String raw = valueOf(headerIdx, values, cs.name);
+            String t = raw == null ? null : raw.trim();
+            if (t == null || t.isEmpty()) {
+                out[j] = null;
+                continue;
+            }
+            try {
+                Class<?> type = cs.type;
+                if (cs.dateFormatter != null) {
+                    out[j] = cs.dateTime
+                            ? LocalDateTime.parse(t, cs.dateFormatter)
+                            : LocalDate.parse(t, cs.dateFormatter);
+                } else if (type == Integer.class) {
+                    out[j] = Integer.valueOf(t);
+                } else if (type == Long.class) {
+                    out[j] = Long.valueOf(t);
+                } else if (type == BigDecimal.class) {
+                    BigDecimal d = parseDecimal(t, options);
+                    out[j] = d != null ? d : raw;
+                } else if (type == Boolean.class) {
+                    out[j] = Boolean.valueOf(t);
+                } else {
+                    out[j] = raw;
+                }
+            } catch (Exception ex) {
+                // Defensive: validated rows should always coerce; keep the raw value if not.
+                out[j] = raw;
+            }
+        }
+        return out;
+    }
+
+    /** Parse a decimal, accepting properly grouped thousands separators only when enabled. */
+    private static BigDecimal parseDecimal(String s, LoadOptions options) {
+        if (PLAIN_NUMBER.matcher(s).matches()) {
+            return new BigDecimal(s);
+        }
+        if (options.allowThousandsSeparators && GROUPED_NUMBER.matcher(s).matches()) {
+            return new BigDecimal(s.replace(",", ""));
+        }
+        return null;
+    }
+
+    private static DataFrame buildDataFrame(List<String> cols, List<Object[]> rows) {
+        String[] labels = cols.toArray(new String[0]);
+        if (rows.isEmpty()) {
+            return DataFrame.empty(labels);
+        }
+        Object[] flat = new Object[rows.size() * labels.length];
+        int k = 0;
+        for (Object[] r : rows) {
+            for (Object v : r) {
+                flat[k++] = v;
+            }
+        }
+        return DataFrame.foldByRow(labels).of(flat);
+    }
+
+    // ---------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------
+
+    private static String valueOf(Map<String, Integer> headerIdx, List<String> values, String name) {
+        Integer i = headerIdx.get(name);
+        return (i != null && i < values.size()) ? values.get(i) : null;
     }
 
     /**
-     * Validate DataFrame against JSON Schema (for already-loaded data)
+     * Translate year-of-era ('y') to year ('u') outside quoted literals so a pattern works under
+     * ResolverStyle.STRICT (which requires an era when 'y' is used). Patterns that already use 'u'
+     * or include an explicit era are unaffected in practice.
      */
+    private static String toStrictPattern(String pattern) {
+        StringBuilder sb = new StringBuilder(pattern.length());
+        boolean inQuote = false;
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '\'') {
+                inQuote = !inQuote;
+                sb.append(c);
+            } else if (!inQuote && c == 'y') {
+                sb.append('u');
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    /** Extract the failing field name from a JSON instance-location like {@code $.lastPx} or {@code /lastPx}. */
+    private static String lastToken(String instanceLocation) {
+        if (instanceLocation == null) {
+            return null;
+        }
+        String s = instanceLocation;
+        int cut = Math.max(s.lastIndexOf('.'), s.lastIndexOf('/'));
+        String token = cut >= 0 ? s.substring(cut + 1) : s;
+        int bracket = token.indexOf('[');
+        if (bracket >= 0) {
+            token = token.substring(0, bracket);
+        }
+        token = token.trim();
+        return (token.isEmpty() || token.equals("$")) ? null : token;
+    }
+
+    private static BadRow toBadRow(ParsedRow row, List<String> headers, List<BadRow.FieldError> fieldErrors) {
+        Map<String, Object> rowData = new LinkedHashMap<>();
+        for (int i = 0; i < headers.size(); i++) {
+            rowData.put(headers.get(i), i < row.values().size() ? row.values().get(i) : null);
+        }
+        String reason = fieldErrors.stream().map(BadRow.FieldError::toString).collect(Collectors.joining("; "));
+        BadRow br = new BadRow((int) row.lineNumber(), rowData, reason);
+        br.rawLine = String.join(",", row.values());
+        br.fieldErrors = fieldErrors;
+        return br;
+    }
+
+    // ---------------------------------------------------------------------
+    // Validate an already-loaded DataFrame (separate entry point, unchanged behavior)
+    // ---------------------------------------------------------------------
+
     public static ValidationResult validateDataFrame(DataFrame df, String schemaPath) throws IOException {
         return validateDataFrame(df, schemaPath, new ValidationOptions());
     }
 
-    /**
-     * Validate DataFrame with custom options
-     */
     public static ValidationResult validateDataFrame(DataFrame df, String schemaPath, ValidationOptions options)
             throws IOException {
 
@@ -587,20 +612,16 @@ public class JsonSchemaDataFrameLoader {
         JsonNode schemaNode = mapper.readTree(Files.readString(Paths.get(schemaPath)));
         Map<String, ColumnSchema> columnSchemas = extractColumnSchemas(schemaNode);
 
-        // Check structural issues
         List<String> structuralErrors = new ArrayList<>();
-
         if (df.width() != columnSchemas.size()) {
-            structuralErrors.add("Column count mismatch: CSV has " + df.width() +
-                    " columns but schema expects " + columnSchemas.size());
+            structuralErrors.add("Column count mismatch: CSV has " + df.width()
+                    + " columns but schema expects " + columnSchemas.size());
         }
-
         for (String expectedCol : columnSchemas.keySet()) {
             if (!df.getColumnsIndex().contains(expectedCol)) {
                 structuralErrors.add("Missing required column: " + expectedCol);
             }
         }
-
         for (String actualCol : df.getColumnsIndex()) {
             if (!columnSchemas.containsKey(actualCol)) {
                 structuralErrors.add("Unexpected column not in schema: " + actualCol);
@@ -610,21 +631,17 @@ public class JsonSchemaDataFrameLoader {
         if (!structuralErrors.isEmpty()) {
             result.valid = false;
             result.errors.addAll(structuralErrors);
-            result.message = "❌ Structural validation failed with " + structuralErrors.size() + " error(s):";
-
+            result.message = "Structural validation failed with " + structuralErrors.size() + " error(s)";
             if (options.verbose) {
                 System.out.println(result.message);
-                result.errors.forEach(error -> System.out.println("  • " + error));
+                result.errors.forEach(error -> System.out.println("  - " + error));
             }
-
             if (options.failFast) {
                 throw new ValidationException("Structural validation failed", result.errors);
             }
-
             return result;
         }
 
-        // Content validation
         JsonSchemaFactory factory = createSchemaFactory(schemaNode);
         SchemaValidatorsConfig config = SchemaValidatorsConfig.builder()
                 .formatAssertionsEnabled(true)
@@ -637,50 +654,47 @@ public class JsonSchemaDataFrameLoader {
 
         String jsonStr = Json.saver().saveToString(df);
         JsonNode jsonArray = mapper.readTree(jsonStr);
-
         Set<ValidationMessage> validationMessages = schema.validate(jsonArray);
 
         if (validationMessages.isEmpty()) {
             result.valid = true;
-            result.message = "✅ Validation passed for all " + df.height() + " records.";
+            result.message = "Validation passed for all " + df.height() + " records.";
         } else {
             result.valid = false;
             result.errors = validationMessages.stream()
                     .map(ValidationMessage::getMessage)
                     .collect(Collectors.toList());
-            result.message = "❌ Content validation failed with " + validationMessages.size() + " error(s):";
+            result.message = "Content validation failed with " + validationMessages.size() + " error(s)";
         }
 
         if (options.verbose) {
             System.out.println(result.message);
             if (!result.valid) {
-                result.errors.stream()
-                        .limit(20)
-                        .forEach(error -> System.out.println("  • " + error));
+                result.errors.stream().limit(20).forEach(error -> System.out.println("  - " + error));
                 if (result.errors.size() > 20) {
                     System.out.println("  ... and " + (result.errors.size() - 20) + " more errors");
                 }
             }
         }
-
         if (options.failFast && !result.valid) {
             throw new ValidationException("Schema validation failed", result.errors);
         }
-
         return result;
     }
 
-    /**
-     * Options for loading CSV
-     */
+    // ---------------------------------------------------------------------
+    // Options / results
+    // ---------------------------------------------------------------------
+
     public static class LoadOptions {
         public boolean verbose = true;
         public boolean emptyStringAsNull = true;
-        public boolean validateAndFilter = true;  // Filter out invalid rows by default
+        public boolean validateAndFilter = true;
+        /** Accept properly grouped thousands separators in numeric fields (e.g. "1,234.56"). */
+        public boolean allowThousandsSeparators = true;
         public List<BadRow> badRows = new ArrayList<>();
 
-        public LoadOptions() {
-        }
+        public LoadOptions() {}
 
         public LoadOptions verbose(boolean verbose) {
             this.verbose = verbose;
@@ -697,20 +711,21 @@ public class JsonSchemaDataFrameLoader {
             return this;
         }
 
+        public LoadOptions allowThousandsSeparators(boolean allow) {
+            this.allowThousandsSeparators = allow;
+            return this;
+        }
+
         public List<BadRow> getBadRows() {
             return badRows;
         }
     }
 
-    /**
-     * Options for validation
-     */
     public static class ValidationOptions {
         public boolean verbose = true;
         public boolean failFast = false;
 
-        public ValidationOptions() {
-        }
+        public ValidationOptions() {}
 
         public ValidationOptions verbose(boolean verbose) {
             this.verbose = verbose;
@@ -723,30 +738,16 @@ public class JsonSchemaDataFrameLoader {
         }
     }
 
-    /**
-     * Validation result container
-     */
     public static class ValidationResult {
         public boolean valid;
         public String message;
         public List<String> errors = new ArrayList<>();
 
-        public boolean isValid() {
-            return valid;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public List<String> getErrors() {
-            return errors;
-        }
+        public boolean isValid() { return valid; }
+        public String getMessage() { return message; }
+        public List<String> getErrors() { return errors; }
     }
 
-    /**
-     * Custom validation exception
-     */
     public static class ValidationException extends RuntimeException {
         private final List<String> errors;
 
@@ -755,14 +756,13 @@ public class JsonSchemaDataFrameLoader {
             this.errors = errors;
         }
 
-        public List<String> getErrors() {
-            return errors;
-        }
+        public List<String> getErrors() { return errors; }
     }
 
-    /**
-     * Print schema information
-     */
+    // ---------------------------------------------------------------------
+    // Schema info / output
+    // ---------------------------------------------------------------------
+
     public static void printSchemaInfo(String schemaPath) throws IOException {
         JsonNode schemaNode = mapper.readTree(Files.readString(Paths.get(schemaPath)));
         Map<String, ColumnSchema> columnSchemas = extractColumnSchemas(schemaNode);
@@ -774,12 +774,10 @@ public class JsonSchemaDataFrameLoader {
         if (schemaVersion != null) {
             System.out.println("Schema Version: " + schemaVersion.asText());
         }
-
         JsonNode title = schemaNode.get("title");
         if (title != null) {
             System.out.println("Title: " + title.asText());
         }
-
         JsonNode description = schemaNode.get("description");
         if (description != null) {
             System.out.println("Description: " + description.asText());
@@ -787,44 +785,36 @@ public class JsonSchemaDataFrameLoader {
 
         System.out.println("\nColumns (" + columnSchemas.size() + "):");
         System.out.println("----------------------------------------");
-
         for (ColumnSchema cs : columnSchemas.values()) {
             System.out.printf("%-30s %-15s %s%s%s%n",
                     cs.name,
                     cs.type != null ? cs.type.getSimpleName() : "String",
                     cs.required ? "[Required] " : "",
                     cs.nullable ? "[Nullable] " : "",
-                    cs.enumValues != null ? "[Enum: " + cs.enumValues.size() + " values]" : ""
-            );
+                    cs.enumValues != null ? "[Enum: " + cs.enumValues.size() + " values]" : "");
         }
-
         System.out.println();
     }
 
-    /**
-     * Save bad rows to a CSV file with error details
-     */
+    /** Save bad rows to a CSV file with error details. */
     public static void saveBadRows(List<BadRow> badRows, String outputPath) throws IOException {
         if (badRows.isEmpty()) {
             return;
         }
-
         try (var writer = Files.newBufferedWriter(Paths.get(outputPath))) {
-            // Determine columns from first row with data
             BadRow firstWithData = badRows.stream()
                     .filter(br -> br.rowData != null && !br.rowData.isEmpty())
                     .findFirst()
                     .orElse(null);
 
             if (firstWithData != null) {
-                // Write header with original columns + error info (properly escaped)
                 List<String> headers = new ArrayList<>(firstWithData.rowData.keySet());
                 headers.add("_error_row_number");
                 headers.add("_error_reason");
-                writer.write(headers.stream().map(JsonSchemaDataFrameLoader::escapeCSV).collect(Collectors.joining(",")));
+                writer.write(headers.stream().map(JsonSchemaDataFrameLoader::escapeCSV)
+                        .collect(Collectors.joining(",")));
                 writer.newLine();
 
-                // Write each bad row
                 for (BadRow badRow : badRows) {
                     List<String> values = new ArrayList<>();
                     if (badRow.rowData != null) {
@@ -833,7 +823,6 @@ public class JsonSchemaDataFrameLoader {
                             values.add(escapeCSV(val == null ? "" : val.toString()));
                         }
                     } else {
-                        // Fill with empty values if no row data
                         for (int i = 0; i < firstWithData.rowData.size(); i++) {
                             values.add("");
                         }
@@ -844,22 +833,18 @@ public class JsonSchemaDataFrameLoader {
                     writer.newLine();
                 }
             } else {
-                // Fallback: simple format for parse errors
                 writer.write("row_number,reason,raw_line");
                 writer.newLine();
                 for (BadRow badRow : badRows) {
-                    writer.write(badRow.rowNumber + "," +
-                            escapeCSV(badRow.reason) + "," +
-                            escapeCSV(badRow.rawLine));
+                    writer.write(badRow.rowNumber + ","
+                            + escapeCSV(badRow.reason) + ","
+                            + escapeCSV(badRow.rawLine));
                     writer.newLine();
                 }
             }
         }
     }
 
-    /**
-     * Escape a value for CSV output
-     */
     private static String escapeCSV(String value) {
         if (value == null) {
             return "";
@@ -870,77 +855,23 @@ public class JsonSchemaDataFrameLoader {
         return value;
     }
 
-    /**
-     * Save valid rows (DataFrame) to a CSV file
-     */
     public static void saveGoodRows(DataFrame df, String outputPath) throws IOException {
         Csv.saver().save(df, outputPath);
     }
 
-    /**
-     * Convenience method: Load, validate, filter, and save in one call
-     */
     public static LoadResult processAndSave(String inputCsvPath, String schemaPath,
                                             String validOutputPath, String invalidOutputPath) throws IOException {
         return processAndSave(inputCsvPath, schemaPath, validOutputPath, invalidOutputPath, new LoadOptions());
     }
 
-    /**
-     * Convenience method: Load, validate, filter, and save with options
-     */
     public static LoadResult processAndSave(String inputCsvPath, String schemaPath,
                                             String validOutputPath, String invalidOutputPath,
                                             LoadOptions options) throws IOException {
-        // Load and validate
         LoadResult result = loadCsvWithJsonSchema(inputCsvPath, schemaPath, options);
-
-        // Save valid rows
         saveGoodRows(result.validData, validOutputPath);
-
-        // Save invalid rows if any
         if (result.getTotalBadRows() > 0) {
             saveBadRows(result.getAllBadRows(), invalidOutputPath);
         }
-
         return result;
-    }
-
-    /**
-     * Main method with example
-     */
-    public static void main(String[] args) {
-        try {
-            String csvPath = "trading_orders.csv";
-            String schemaPath = "trading_orders_schema.json";
-
-            System.out.println("=".repeat(60));
-            System.out.println("JSON Schema DataFrame Loader (NetworkNT - with filtering)");
-            System.out.println("=".repeat(60));
-            System.out.println();
-
-            printSchemaInfo(schemaPath);
-
-            System.out.println("Loading and validating CSV...");
-            System.out.println("-".repeat(60));
-
-            // Process and save in one call
-            LoadResult result = processAndSave(
-                    csvPath,
-                    schemaPath,
-                    csvPath.replace(".csv", ".valid.csv"),
-                    csvPath.replace(".csv", ".invalid.csv"),
-                    new LoadOptions().verbose(true)
-            );
-
-            System.out.println("\n" + "=".repeat(60));
-            System.out.println("Processing complete!");
-            System.out.println("  Valid rows:   " + result.validData.height());
-            System.out.println("  Invalid rows: " + result.getTotalBadRows());
-            System.out.println("=".repeat(60));
-
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 }

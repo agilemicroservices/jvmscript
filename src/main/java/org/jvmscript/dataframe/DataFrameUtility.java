@@ -26,10 +26,6 @@ public class DataFrameUtility {
     }
 
     public static void main() throws Exception {
-//        String inputCsv = "/opt/data/trafix/ActivityReport.csv";
-//        String badRowsCsv = "/opt/data/trafix/ActivityReport.bad.csv";
-//        String schemaPath = "/opt/data/trafix/ActivityReport.schema.json";
-
         String inputCsv = "/opt/data/trafix/testEodFile.csv";
         String badRowsCsv = "/opt/data/trafix/testEodFile.bad.csv";
         String schemaPath = "/opt/data/trafix/vision-execution.schema.yaml";
