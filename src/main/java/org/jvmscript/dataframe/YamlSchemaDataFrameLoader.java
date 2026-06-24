@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
+import org.dflib.DataFrame;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +39,21 @@ public class YamlSchemaDataFrameLoader {
 
         // Use the JSON loader with the converted schema
         return JsonSchemaDataFrameLoader.loadCsvWithJsonSchema(csvPath, schemaNode, options);
+    }
+
+    /**
+     * Re-validate an already-typed DataFrame against a YAML schema, row by row (no CSV parse).
+     * See {@link JsonSchemaDataFrameLoader#revalidateDataFrame}.
+     */
+    public static LoadResult revalidateDataFrameWithYamlSchema(
+            DataFrame df, String yamlSchemaPath) throws IOException {
+        return JsonSchemaDataFrameLoader.revalidateDataFrame(df, loadYamlAsJsonNode(yamlSchemaPath));
+    }
+
+    public static LoadResult revalidateDataFrameWithYamlSchema(
+            DataFrame df, String yamlSchemaPath,
+            JsonSchemaDataFrameLoader.LoadOptions options) throws IOException {
+        return JsonSchemaDataFrameLoader.revalidateDataFrame(df, loadYamlAsJsonNode(yamlSchemaPath), options);
     }
 
     /**

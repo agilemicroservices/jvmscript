@@ -8,6 +8,7 @@ import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRecord;
 import de.siegmar.fastcsv.reader.FieldMismatchStrategy;
 import org.dflib.DataFrame;
+import org.dflib.row.RowProxy;
 import org.dflib.csv.Csv;
 import org.dflib.json.Json;
 
@@ -680,6 +681,154 @@ public class JsonSchemaDataFrameLoader {
             throw new ValidationException("Schema validation failed", result.errors);
         }
         return result;
+    }
+
+    // ---------------------------------------------------------------------
+    // Re-validate an already-typed DataFrame, PER ROW, against a schema
+    // ---------------------------------------------------------------------
+
+    /**
+     * Re-validate an already-typed {@link DataFrame} against a schema, <b>row by row</b>, returning a
+     * {@link LoadResult} with the same shape as {@link #loadCsvWithJsonSchema}: {@code validData} holds
+     * the rows that pass (typed values preserved) and {@code validationErrors} holds a {@link BadRow}
+     * per failing row (with field-level detail). {@code parseErrors} is always empty — there is no CSV
+     * parse here; the input is an in-memory frame (e.g. a converted/derived frame being re-checked
+     * against the canonical schema so any row that is canonical-invalid is quarantined regardless of how
+     * the source-format schema was written).
+     *
+     * <p>Row JSON is built from the frame's <i>typed</i> cell values (not raw text): {@code null} is
+     * omitted (so {@code required}/{@code nullable} behave exactly as on load); {@link LocalDate}/
+     * {@link LocalDateTime} are formatted back to the schema's date pattern so a {@code string}+pattern
+     * date field validates; numbers/integers/booleans map to their JSON node types. Typed temporals are
+     * inherently valid dates (a {@link LocalDate} cannot be Feb 30), so the semantic date check only
+     * needs to fire for a date column that still holds a raw string.
+     */
+    public static LoadResult revalidateDataFrame(DataFrame df, JsonNode schemaNode) {
+        return revalidateDataFrame(df, schemaNode, new LoadOptions().verbose(false));
+    }
+
+    public static LoadResult revalidateDataFrame(DataFrame df, JsonNode schemaNode, LoadOptions options) {
+        LoadResult result = new LoadResult();
+        Map<String, ColumnSchema> columnSchemas = extractColumnSchemas(schemaNode);
+        List<String> schemaCols = new ArrayList<>(columnSchemas.keySet());
+
+        JsonSchemaFactory factory = createSchemaFactory(schemaNode);
+        SchemaValidatorsConfig config = SchemaValidatorsConfig.builder()
+                .formatAssertionsEnabled(true)
+                .build();
+        JsonSchema itemSchema = getItemSchema(schemaNode, factory, config);
+
+        List<Object[]> validRows = new ArrayList<>();
+        int rowNumber = 0; // 1-based logical index within the frame (no physical CSV line after conversion)
+        for (RowProxy row : df) {
+            rowNumber++;
+            ObjectNode rowJson = rowToJson(df, row, columnSchemas);
+            List<BadRow.FieldError> fieldErrors = new ArrayList<>();
+
+            for (ValidationMessage m : itemSchema.validate(rowJson)) {
+                String col = lastToken(m.getInstanceLocation() == null ? null : m.getInstanceLocation().toString());
+                String val = col == null ? null : stringValue(row.get(col));
+                String schemaLoc = m.getSchemaLocation() == null ? null : m.getSchemaLocation().toString();
+                fieldErrors.add(new BadRow.FieldError(col, val, m.getMessage(), schemaLoc));
+            }
+
+            // Semantic date check: only a date column still holding a raw String could be an impossible
+            // date; a typed LocalDate/LocalDateTime is inherently valid and is skipped.
+            for (ColumnSchema cs : columnSchemas.values()) {
+                if (cs.dateFormatter == null) {
+                    continue;
+                }
+                Object v = row.get(cs.name);
+                if (!(v instanceof CharSequence)) {
+                    continue;
+                }
+                String t = v.toString().trim();
+                if (t.isEmpty()) {
+                    continue;
+                }
+                try {
+                    if (cs.dateTime) {
+                        LocalDateTime.parse(t, cs.dateFormatter);
+                    } else {
+                        LocalDate.parse(t, cs.dateFormatter);
+                    }
+                } catch (DateTimeException ex) {
+                    fieldErrors.add(new BadRow.FieldError(cs.name, t,
+                            "Invalid date; expected format " + (cs.format != null ? cs.format : "ISO"), null));
+                }
+            }
+
+            if (fieldErrors.isEmpty()) {
+                Object[] vals = new Object[schemaCols.size()];
+                for (int j = 0; j < schemaCols.size(); j++) {
+                    vals[j] = row.get(schemaCols.get(j));
+                }
+                validRows.add(vals);
+            } else {
+                result.validationErrors.add(dfBadRow(rowNumber, df, row, fieldErrors));
+            }
+        }
+
+        result.validData = buildDataFrame(schemaCols, validRows);
+        options.badRows = result.getAllBadRows();
+
+        if (options.verbose) {
+            System.out.println("Re-validated " + df.height() + " rows; "
+                    + result.validData.height() + " valid, "
+                    + result.validationErrors.size() + " invalid.");
+        }
+        return result;
+    }
+
+    /** Build a JSON object for one DataFrame row from its TYPED cell values (mirrors toRowJson, typed-side). */
+    private static ObjectNode rowToJson(DataFrame df, RowProxy row, Map<String, ColumnSchema> cols) {
+        ObjectNode o = mapper.createObjectNode();
+        for (String name : df.getColumnsIndex()) {
+            Object v = row.get(name);
+            if (v == null) {
+                continue; // omit -> required/nullable behave correctly (same as the blank-omit on load)
+            }
+            ColumnSchema cs = cols.get(name);
+            if (cs == null) {
+                o.put(name, v.toString()); // unknown column -> additionalProperties:false fires
+                continue;
+            }
+            if (v instanceof LocalDate d) {
+                o.put(name, cs.dateFormatter != null ? d.format(cs.dateFormatter) : d.toString());
+            } else if (v instanceof LocalDateTime dt) {
+                o.put(name, cs.dateFormatter != null ? dt.format(cs.dateFormatter) : dt.toString());
+            } else if (v instanceof BigDecimal d) {
+                o.put(name, d);
+            } else if (v instanceof Integer i) {
+                o.put(name, i.intValue());
+            } else if (v instanceof Long l) {
+                o.put(name, l.longValue());
+            } else if (v instanceof Boolean b) {
+                o.put(name, b.booleanValue());
+            } else if (v instanceof Number n) {
+                o.put(name, new BigDecimal(n.toString()));
+            } else {
+                o.put(name, v.toString());
+            }
+        }
+        return o;
+    }
+
+    /** Render a typed cell value for human-readable error reporting. */
+    private static String stringValue(Object v) {
+        return v == null ? null : v.toString();
+    }
+
+    /** Build a BadRow for a failing DataFrame row (logical index + full row data for the quarantine file). */
+    private static BadRow dfBadRow(int rowNumber, DataFrame df, RowProxy row, List<BadRow.FieldError> fieldErrors) {
+        Map<String, Object> rowData = new LinkedHashMap<>();
+        for (String col : df.getColumnsIndex()) {
+            rowData.put(col, row.get(col));
+        }
+        String reason = fieldErrors.stream().map(BadRow.FieldError::toString).collect(Collectors.joining("; "));
+        BadRow br = new BadRow(rowNumber, rowData, reason); // (int, Map, String) ctor rebuilds rawLine from values
+        br.fieldErrors = fieldErrors;
+        return br;
     }
 
     // ---------------------------------------------------------------------

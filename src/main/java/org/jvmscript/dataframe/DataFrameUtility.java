@@ -20,6 +20,14 @@ public class DataFrameUtility {
         return YamlSchemaDataFrameLoader.loadCsvWithYamlSchema(inputCsv, schemaPath, new JsonSchemaDataFrameLoader.LoadOptions().verbose(true));
     }
 
+    /**
+     * Re-validate an already-typed DataFrame against a YAML schema, row by row (no CSV parse).
+     * validData = passing rows (typed values preserved); validationErrors = a BadRow per failing row.
+     */
+    public static LoadResult revalidateDataFrameWithYamlSchema(DataFrame df, String schemaPath) throws Exception {
+        return YamlSchemaDataFrameLoader.revalidateDataFrameWithYamlSchema(df, schemaPath);
+    }
+
     public static void saveBadRows(LoadResult result, String outputPath) throws Exception {
         var badRows = result.getAllBadRows();
         JsonSchemaDataFrameLoader.saveBadRows(badRows, outputPath);
