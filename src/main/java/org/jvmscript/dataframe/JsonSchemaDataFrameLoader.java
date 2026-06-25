@@ -710,7 +710,13 @@ public class JsonSchemaDataFrameLoader {
     public static LoadResult revalidateDataFrame(DataFrame df, JsonNode schemaNode, LoadOptions options) {
         LoadResult result = new LoadResult();
         Map<String, ColumnSchema> columnSchemas = extractColumnSchemas(schemaNode);
-        List<String> schemaCols = new ArrayList<>(columnSchemas.keySet());
+        // validData preserves the INPUT frame's columns (which may be a SUBSET of the schema's — an
+        // optional schema column can be absent from the frame entirely), not the schema's, so passing
+        // rows keep their exact shape/types and we never read a column the frame doesn't have.
+        List<String> dfCols = new ArrayList<>();
+        for (String c : df.getColumnsIndex()) {
+            dfCols.add(c);
+        }
 
         JsonSchemaFactory factory = createSchemaFactory(schemaNode);
         SchemaValidatorsConfig config = SchemaValidatorsConfig.builder()
@@ -759,9 +765,9 @@ public class JsonSchemaDataFrameLoader {
             }
 
             if (fieldErrors.isEmpty()) {
-                Object[] vals = new Object[schemaCols.size()];
-                for (int j = 0; j < schemaCols.size(); j++) {
-                    vals[j] = row.get(schemaCols.get(j));
+                Object[] vals = new Object[dfCols.size()];
+                for (int j = 0; j < dfCols.size(); j++) {
+                    vals[j] = row.get(dfCols.get(j));
                 }
                 validRows.add(vals);
             } else {
@@ -769,7 +775,7 @@ public class JsonSchemaDataFrameLoader {
             }
         }
 
-        result.validData = buildDataFrame(schemaCols, validRows);
+        result.validData = buildDataFrame(dfCols, validRows);
         options.badRows = result.getAllBadRows();
 
         if (options.verbose) {
