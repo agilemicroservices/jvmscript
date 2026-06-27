@@ -28,6 +28,16 @@ public class DataFrameUtility {
         return YamlSchemaDataFrameLoader.revalidateDataFrameWithYamlSchema(df, schemaPath);
     }
 
+    /**
+     * Load a CSV by POSITION (header names ignored) into a DataFrame with columns labeled "1".."N",
+     * ragged-tolerant. For fixed-position legacy formats whose headers are unreliable; a converter maps
+     * positions to canonical and the canonical re-validation is the gate. See
+     * {@link JsonSchemaDataFrameLoader#loadCsvPositional}.
+     */
+    public static DataFrame loadCsvPositional(String inputCsv) throws Exception {
+        return JsonSchemaDataFrameLoader.loadCsvPositional(inputCsv);
+    }
+
     public static void saveBadRows(LoadResult result, String outputPath) throws Exception {
         var badRows = result.getAllBadRows();
         JsonSchemaDataFrameLoader.saveBadRows(badRows, outputPath);

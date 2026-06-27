@@ -376,6 +376,60 @@ public class JsonSchemaDataFrameLoader {
     }
 
     // ---------------------------------------------------------------------
+    // Positional CSV load (header NAMES ignored) for fixed-position legacy formats
+    // ---------------------------------------------------------------------
+
+    /**
+     * Load a CSV by POSITION — the header row is consumed but its NAMES are ignored. Returns a DataFrame
+     * whose columns are the file's columns in order, labeled {@code "1".."N"} (N = the header field
+     * count). Ragged rows are tolerated: shorter rows are null-padded, longer rows truncated to N (so a
+     * stray trailing comma is dropped). Blank cells become null; no schema/typing/validation is applied.
+     *
+     * <p>For legacy fixed-position formats whose headers are unreliable (varying casing/names across
+     * files) but whose column ORDER is fixed — a converter maps positions to canonical fields and the
+     * canonical re-validation is the enforcement (so the messy legacy header never reaches downstream).
+     */
+    public static DataFrame loadCsvPositional(String csvPath) throws IOException {
+        List<List<String>> rows = new ArrayList<>();
+        int n = -1;
+        try (CsvReader<CsvRecord> reader = CsvReader.builder()
+                .detectBomHeader(true)
+                .skipEmptyLines(true)
+                .extraFieldStrategy(FieldMismatchStrategy.IGNORE)
+                .missingFieldStrategy(FieldMismatchStrategy.IGNORE)
+                .ofCsvRecord(Paths.get(csvPath))) {
+            boolean header = true;
+            for (CsvRecord rec : reader) {
+                if (header) {
+                    n = rec.getFields().size();
+                    header = false;
+                    continue;
+                }
+                rows.add(rec.getFields());
+            }
+        }
+        if (n < 0) {
+            return DataFrame.empty();
+        }
+        String[] labels = new String[n];
+        for (int i = 0; i < n; i++) {
+            labels[i] = String.valueOf(i + 1); // 1-based position label
+        }
+        if (rows.isEmpty()) {
+            return DataFrame.empty(labels);
+        }
+        Object[] flat = new Object[rows.size() * n];
+        int k = 0;
+        for (List<String> r : rows) {
+            for (int i = 0; i < n; i++) {
+                String v = i < r.size() ? r.get(i) : null;
+                flat[k++] = (v == null || v.isEmpty()) ? null : v; // blank -> null; truncate/pad to N
+            }
+        }
+        return DataFrame.foldByRow(labels).of(flat);
+    }
+
+    // ---------------------------------------------------------------------
     // Phase 1: parsing
     // ---------------------------------------------------------------------
 
