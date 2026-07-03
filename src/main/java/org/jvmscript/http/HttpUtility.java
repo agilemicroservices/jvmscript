@@ -15,8 +15,8 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.AttributeKey;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -50,7 +50,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 // TODO enforce max redirects
 public class HttpUtility
 {
-    private static final Logger logger = LogManager.getLogger(HttpUtility.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpUtility.class);
     
     private static final long DEFAULT_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(15);
     private static final AttributeKey<Queue<FullHttpResponse>> RESPONSE_QUEUE_KEY = AttributeKey.newInstance("ResponseQueue");

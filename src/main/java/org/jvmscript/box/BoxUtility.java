@@ -1,7 +1,7 @@
 package org.jvmscript.box;
 
 import com.box.sdk.*;
-import org.apache.logging.log4j.LogManager;
+import org.slf4j.LoggerFactory;
 import org.jvmscript.datetime.DateTimeUtility;
 import org.jvmscript.file.FileUtility;
 import org.jvmscript.sftp.SftpUtility;
@@ -14,7 +14,7 @@ import java.util.stream.StreamSupport;
 
 public class BoxUtility {
 
-    private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(BoxUtility.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BoxUtility.class);
 
     public static BoxDeveloperEditionAPIConnection api;
     public static void boxOpenConnection() throws Exception{

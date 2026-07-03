@@ -3,8 +3,8 @@ package org.jvmscript.ftp;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.jvmscript.file.FileUtility;
 
 import java.io.FileInputStream;
@@ -17,7 +17,7 @@ import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
 
 public class FtpUtility {
 
-    private static final Logger logger = LogManager.getLogger(FtpUtility.class);
+    private static final Logger logger = LoggerFactory.getLogger(FtpUtility.class);
 
     private static FTPClient ftpClient = new FTPClient();
     //private static FTPClientConfig ftpClientConfig = new FTPClientConfig();

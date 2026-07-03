@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Default human-readable console logging for jvmscript scripts. Selected automatically
+     when the script project provides no log4j2 configuration of its own. Set LOG_FORMAT=json
+     for the structured alternative (jvmscript-log4j2-json.xml). -->
+<Configuration status="warn">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36}%notEmpty{ %X} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>

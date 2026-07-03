@@ -1,7 +1,7 @@
 package org.jvmscript.amazon.s3;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.jvmscript.file.FileUtility;
 import org.jvmscript.property.PropertyUtility;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -19,7 +19,7 @@ import java.util.List;
 
 public class S3Util {
 
-    private static final Logger logger = LogManager.getLogger(S3Util.class);
+    private static final Logger logger = LoggerFactory.getLogger(S3Util.class);
 
     S3Client s3Client;
 

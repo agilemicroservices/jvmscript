@@ -2,8 +2,8 @@ package org.jvmscript.record;
 
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.jvmscript.file.FileUtility;
 
 import java.io.BufferedWriter;
@@ -25,7 +25,7 @@ import java.util.function.Function;
 
 public class DelimitedRecordFactory extends RecordFactory {
 
-    private static final Logger logger = LogManager.getLogger(DelimitedRecordFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(DelimitedRecordFactory.class);
 
     public Character delimiterChar = ',';
     public Character quoteChar = '"';

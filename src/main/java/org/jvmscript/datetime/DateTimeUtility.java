@@ -1,7 +1,7 @@
 package org.jvmscript.datetime;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.jvmscript.cli.CliUtility;
 
 import java.time.LocalDate;
@@ -13,7 +13,7 @@ import java.util.Locale;
 
 public class DateTimeUtility {
 
-    private static final Logger logger = LogManager.getLogger(DateTimeUtility.class);
+    private static final Logger logger = LoggerFactory.getLogger(DateTimeUtility.class);
 
     public static LocalTime toLocalTimeFromString(String timeString, String formatter) {
         var dateTimeFormatter = new DateTimeFormatterBuilder().parseCaseInsensitive()

@@ -1,11 +1,11 @@
 package org.jvmscript.amazon.s3;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class S3Utility {
 
-    private static final Logger logger = LogManager.getLogger(S3Utility.class);
+    private static final Logger logger = LoggerFactory.getLogger(S3Utility.class);
 
     private static S3Util s3Util;
 

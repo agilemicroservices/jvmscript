@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Structured JSON console logging for jvmscript scripts, one event per line with MDC
+     fields inlined - ready for Promtail/Loki, the OpenTelemetry Collector's filelog
+     receiver, or Splunk. Selected via LOG_FORMAT=json (or -Dlog.format=json) when the
+     script project provides no log4j2 configuration of its own. -->
+<Configuration status="warn">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <JsonTemplateLayout eventTemplateUri="classpath:jvmscript-log-template.json"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
