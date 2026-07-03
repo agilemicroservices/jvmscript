@@ -12,8 +12,8 @@ fix this!!!!
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -33,7 +33,7 @@ import java.util.TreeMap;
 
 public class FixedWidthRecordFactory extends RecordFactory {
 
-    private static final Logger logger = LogManager.getLogger(FixedWidthRecordFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(FixedWidthRecordFactory.class);
 
     class FixedWidthBeanField {
         Field field;
@@ -227,8 +227,9 @@ public class FixedWidthRecordFactory extends RecordFactory {
     }
 
     Integer getBufferSize(TreeMap<Integer, FixedWidthBeanField> fixedWidthFieldClassMap) {
+        //start positions are 1-based: a field at start 45 with length 7 fills positions 45-51
         FixedWidthBeanField lastField = fixedWidthFieldClassMap.lastEntry().getValue();
-        return lastField.fixedWidthField.start() + lastField.fixedWidthField.length();
+        return lastField.fixedWidthField.start() + lastField.fixedWidthField.length() - 1;
     }
 
     StringBuffer initializeStringBuffer(Integer bufferSize, String initCharacter) {
