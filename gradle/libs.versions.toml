@@ -1,0 +1,117 @@
+# Single source of truth for dependency versions.
+# Renovate/Dependabot parse this file natively for automated upgrade PRs.
+
+[versions]
+groovy = "5.0.6"
+spock = "2.4-groovy-5.0"
+jackson = "2.22.0"
+aws-sdk = "2.46.21"
+bouncycastle = "1.84"
+poi = "5.5.1"
+log4j = "2.26.1"
+slf4j = "2.0.18"
+dflib = "2.0.0-M6"
+fastcsv = "4.3.1"
+jakarta-mail = "2.1.3"
+angus-mail = "2.0.5"
+commons-codec = "1.22.0"
+commons-io = "2.22.0"
+commons-lang3 = "3.20.0"
+commons-compress = "1.28.0"
+commons-exec = "1.6.0"
+commons-cli = "1.11.0"
+commons-net = "3.13.0"
+jakarta-persistence = "3.2.0"
+# httpclient 4.5.x is EOL - held pending migration to JDK java.net.http
+httpclient = "4.5.14"
+# univocity is unmaintained (last release 2021) - candidate for replacement by fastcsv
+univocity = "2.9.1"
+# json-schema-validator 3.x is a breaking API change - held, DataFrame loaders use the 1.5 API
+json-schema-validator = "1.5.9"
+zip4j = "2.11.5"
+sshj = "0.40.0"
+disruptor = "4.0.0"
+sql2o = "1.9.1"
+# netty 4.2 exists but netty only serves the deprecated HttpUtil - remove with it
+netty = "4.1.135.Final"
+# box-java-sdk 10.x is Box's rewritten next-gen SDK - staying on the classic 4.x line
+box = "4.16.4"
+postgresql = "42.7.12"
+hamcrest = "3.0"
+# JUnit 6 exists but Spock 2.4 requires JUnit Platform 1.x - held until Spock supports it
+junit-jupiter = "5.14.4"
+junit-platform-launcher = "1.14.4"
+
+[libraries]
+# Mail
+jakarta-mail-api = { module = "jakarta.mail:jakarta.mail-api", version.ref = "jakarta-mail" }
+angus-mail = { module = "org.eclipse.angus:angus-mail", version.ref = "angus-mail" }
+angus-smtp = { module = "org.eclipse.angus:smtp", version.ref = "angus-mail" }
+
+# Logging
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
+log4j-slf4j2-impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "log4j" }
+log4j-layout-template-json = { module = "org.apache.logging.log4j:log4j-layout-template-json", version.ref = "log4j" }
+
+# DFLib DataFrame
+dflib-bom = { module = "org.dflib:dflib-bom", version.ref = "dflib" }
+dflib-core = { module = "org.dflib:dflib" }
+dflib-csv = { module = "org.dflib:dflib-csv" }
+dflib-json = { module = "org.dflib:dflib-json" }
+fastcsv = { module = "de.siegmar:fastcsv", version.ref = "fastcsv" }
+
+# Apache Commons
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
+commons-exec = { module = "org.apache.commons:commons-exec", version.ref = "commons-exec" }
+commons-cli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
+commons-net = { module = "commons-net:commons-net", version.ref = "commons-net" }
+
+# Jakarta
+jakarta-persistence-api = { module = "jakarta.persistence:jakarta.persistence-api", version.ref = "jakarta-persistence" }
+
+# HTTP
+httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclient" }
+httpmime = { module = "org.apache.httpcomponents:httpmime", version.ref = "httpclient" }
+
+# Apache POI
+poi-core = { module = "org.apache.poi:poi", version.ref = "poi" }
+poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
+
+# Jackson
+jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
+jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310" }
+jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
+
+# Parsing, validation & compression
+univocity-parsers = { module = "com.univocity:univocity-parsers", version.ref = "univocity" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
+zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
+
+# SSH / crypto
+sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
+bcpg = { module = "org.bouncycastle:bcpg-jdk18on", version.ref = "bouncycastle" }
+bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+
+# Misc
+disruptor = { module = "com.lmax:disruptor", version.ref = "disruptor" }
+sql2o = { module = "org.sql2o:sql2o", version.ref = "sql2o" }
+netty-all = { module = "io.netty:netty-all", version.ref = "netty" }
+aws-s3 = { module = "software.amazon.awssdk:s3", version.ref = "aws-sdk" }
+aws-protocol-core = { module = "software.amazon.awssdk:protocol-core", version.ref = "aws-sdk" }
+box-java-sdk = { module = "com.box:box-java-sdk", version.ref = "box" }
+groovy = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+
+# Testing
+spock-core = { module = "org.spockframework:spock-core", version.ref = "spock" }
+hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-jupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform-launcher" }
