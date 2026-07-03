@@ -15,8 +15,8 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.jvmscript.datetime.DateTimeUtility;
 
 import java.io.*;
@@ -32,8 +32,7 @@ import java.util.stream.Stream;
 import static org.jvmscript.datetime.DateTimeUtility.getDateTimeString;
 
 public class FileUtility {
-    private static final Logger logger = LogManager.getLogger(FileUtility.class);
-    private static boolean useTemp = false;
+    private static final Logger logger = LoggerFactory.getLogger(FileUtility.class);
     public static String[] ls(String pathName) throws IOException {
         return dir(pathName);
     }
@@ -49,9 +48,9 @@ public class FileUtility {
         IOFileFilter filter;
 
         if(caseSensitive) {
-            filter = new WildcardFileFilter(getFileName(pathName), IOCase.SENSITIVE);
+            filter = WildcardFileFilter.builder().setWildcards(getFileName(pathName)).setIoCase(IOCase.SENSITIVE).get();
         } else {
-            filter = new WildcardFileFilter(getFileName(pathName), IOCase.INSENSITIVE);
+            filter = WildcardFileFilter.builder().setWildcards(getFileName(pathName)).setIoCase(IOCase.INSENSITIVE).get();
         }
 
         Collection<File> files;
@@ -110,7 +109,7 @@ public class FileUtility {
 
     public static String getFileDateTime(String fullFilename) throws IOException {
         Long lastModified = new File(fullFilename).lastModified();
-        return DateFormatUtils.format(lastModified, "yyyy-MM-dd kk:mm:ss.sss z");
+        return DateFormatUtils.format(lastModified, "yyyy-MM-dd HH:mm:ss.SSS z");
     }
 
     public static Long getFileSize(String fullFilename) {
@@ -124,12 +123,11 @@ public class FileUtility {
     public static Long fileGetLineCount(String fullFilename, Integer headerLines)  throws Exception {
 
         Path path = Paths.get(fullFilename);
-        Long lineCount = 0L;
+        Long lineCount;
         try (Stream<String> stream = Files.lines(path)) {
             lineCount = stream.count();
-            stream.close();
         }
-        if (lineCount >= headerLines) lineCount = lineCount - headerLines;
+        lineCount = Math.max(0L, lineCount - headerLines);
         logger.info("file {} with header count {} has {} lines after subtracting header lines", fullFilename, headerLines, lineCount);
         return lineCount;
     }
@@ -160,31 +158,29 @@ public class FileUtility {
         return fileList;
     }
 
-    public static void concatFiles(String destinationFilename, String ...soureFiles) throws Exception {
+    public static void concatFiles(String destinationFilename, String ...sourceFiles) throws Exception {
 
-        File outputFile = new File(destinationFilename);
-        FileOutputStream fileOutputStream = new FileOutputStream(outputFile);
-        FileChannel outputFileChannel = fileOutputStream.getChannel();
+        try (FileOutputStream fileOutputStream = new FileOutputStream(destinationFilename);
+             FileChannel outputFileChannel = fileOutputStream.getChannel()) {
 
-        long filePosition = 0;
+            long filePosition = 0;
 
-        for(String sourceFilename : soureFiles) {
-            File sourceFile = new File(sourceFilename);
-            FileInputStream fileInputStream = new FileInputStream(sourceFile);
-            FileChannel inputFileChannel = fileInputStream.getChannel();
+            for (String sourceFilename : sourceFiles) {
+                try (FileInputStream fileInputStream = new FileInputStream(sourceFilename);
+                     FileChannel inputFileChannel = fileInputStream.getChannel()) {
 
-            outputFileChannel.transferFrom( inputFileChannel,
-                    filePosition,
-                    inputFileChannel.size());
-
-            filePosition += inputFileChannel.size();
-
-            inputFileChannel.close();
-            fileInputStream.close();
+                    //a single transferFrom call may transfer fewer bytes than requested
+                    long size = inputFileChannel.size();
+                    long transferred = 0;
+                    while (transferred < size) {
+                        transferred += outputFileChannel.transferFrom(inputFileChannel,
+                                filePosition + transferred,
+                                size - transferred);
+                    }
+                    filePosition += size;
+                }
+            }
         }
-
-        outputFileChannel.close();
-        fileOutputStream.close();
     }
 
     public static String[] copyFile(String sourceFilename, String destFilename) throws IOException{
@@ -200,7 +196,7 @@ public class FileUtility {
             else {  //wildcard source and destination is directory
                 logger.info("copyFile Wildcard Source {} copied to directory {}", sourceFilename, destFilename);
 
-                WildcardFileFilter wildcardFileFilter = new WildcardFileFilter(getFileName(sourceFilename));
+                WildcardFileFilter wildcardFileFilter = WildcardFileFilter.builder().setWildcards(getFileName(sourceFilename)).get();
                 Collection<File> sourceFiles = FileUtils.listFiles(new File(getFilePath(sourceFilename)), wildcardFileFilter, null);
                 return copyFilesToDirectory(sourceFiles, destinationFile);
             }
@@ -222,7 +218,7 @@ public class FileUtility {
             if (destinationFile.isDirectory()) {
                 FileUtils.copyFileToDirectory(sourceFile, destinationFile);
                 logger.info("File {} Copied to Directory {}", sourceFilename, destFilename);
-                copiedFile[0] = destFilename + getFileName(sourceFilename);
+                copiedFile[0] = new File(destinationFile, getFileName(sourceFilename)).getPath();
             }
             else {
                 logger.info("File {} Copied to File {}", sourceFilename, destFilename);
@@ -269,7 +265,7 @@ public class FileUtility {
             //wildcard source
             logger.info("Wildcard Source {} Deleted", sourceFilename);
 
-            WildcardFileFilter wildcardFileFilter = new WildcardFileFilter(getFileName(sourceFilename));
+            WildcardFileFilter wildcardFileFilter = WildcardFileFilter.builder().setWildcards(getFileName(sourceFilename)).get();
             Collection<File> sourceFiles = FileUtils.listFiles(new File(getFilePath(sourceFilename)), wildcardFileFilter, null);
 
             String[] fileList = new String[sourceFiles.size()];
@@ -322,7 +318,7 @@ public class FileUtility {
             else {  //wildcard source and destination is directory
                 logger.info("Wildcard Source {} moved to directory {}", sourceFilename, destFilename);
 
-                WildcardFileFilter wildcardFileFilter = new WildcardFileFilter(getFileName(sourceFilename));
+                WildcardFileFilter wildcardFileFilter = WildcardFileFilter.builder().setWildcards(getFileName(sourceFilename)).get();
                 Collection<File> sourceFiles = FileUtils.listFiles(new File(getFilePath(sourceFilename)), wildcardFileFilter, null);
                 return moveFilesToDirectory(sourceFiles, destinationFile);
             }
@@ -368,7 +364,7 @@ public class FileUtility {
         return fileList;
     }
 
-    public static String[] archvieFile(String[] sourceFileNames) throws IOException {
+    public static String[] archiveFile(String[] sourceFileNames) throws IOException {
 
         String[] fileList = new String[0];
 
@@ -379,19 +375,28 @@ public class FileUtility {
         return fileList;
     }
 
+    /** @deprecated typo — use {@link #archiveFile(String[])} */
+    @Deprecated
+    public static String[] archvieFile(String[] sourceFileNames) throws IOException {
+        return archiveFile(sourceFileNames);
+    }
+
     public static String[] archiveFile(String sourceFilename) throws IOException {
 
         return archiveFile(sourceFilename, "archive");
     }
 
+    //archiveFile COPIES to the date-stamped archive folder, deliberately leaving the
+    //source file in place - use moveFile afterwards if the original should go away
     public static String[] archiveFile(String sourceFilename, String archiveDirectory) throws IOException{
-        String archiveSubFolder = archiveDirectory + File.separator + getDateTimeString("yyyy-MM/yyyy-MM-dd");
-        String destRootPath = getFilePath(archiveDirectory);
-        //String destFilename = destRootPath + archiveSubFolder;
+        return archiveFile(sourceFilename, archiveDirectory, "yyyy-MM/yyyy-MM-dd");
+    }
+
+    public static String[] archiveFile(String sourceFilename, String archiveDirectory, String dateFormat) throws IOException{
+        String archiveSubFolder = archiveDirectory + File.separator + getDateTimeString(dateFormat);
         logger.info("Archive File(s) {} to {}", sourceFilename, archiveSubFolder);
 
         makeDirectory(archiveSubFolder);
-//        String[] archiveFiles = moveFile(sourceFilename, archiveSubFolder);
         String[] archiveFiles = copyFile(sourceFilename, archiveSubFolder);
 
         return archiveFiles;
@@ -453,10 +458,7 @@ public class FileUtility {
     }
 
     public static void deleteDirectory(String directoryName) throws IOException {
-        cleanDirectory(directoryName);
-        File directory = new File(directoryName);
-        FileUtils.deleteDirectory(directory);
-        directory.delete();
+        FileUtils.deleteDirectory(new File(directoryName));
         logger.debug("deleteDirectory {} deleted", directoryName);
     }
 
@@ -528,7 +530,7 @@ public class FileUtility {
             fileList = moveFile(sourceFilename, destFilename);
         }
         else {
-            logger.error("renameFile Source File {} and Dest File {} must be files");
+            logger.error("renameFile Source File {} must be a file and Dest File {} must not exist", sourceFilename, destFilename);
             throw new IOException("renameFile Source and Destination must be files");
         }
 
@@ -542,22 +544,29 @@ public class FileUtility {
     }
 
     public static void unGzipFile(String zipFilename) throws Exception {
-        FileInputStream fileInputStream = new FileInputStream(zipFilename);
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
-        FileOutputStream out = new FileOutputStream(zipFilename.replace(".gz", ""));
-        GzipCompressorInputStream gzIn = new GzipCompressorInputStream(bufferedInputStream);
-        final byte[] buffer = new byte[2048];
-        int n = 0;
-        while (-1 != (n = gzIn.read(buffer))) {
-            out.write(buffer, 0, n);
+        String outputFilename = stripCompressionExtension(zipFilename, ".gz");
+        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(zipFilename));
+             GzipCompressorInputStream gzIn = new GzipCompressorInputStream(bufferedInputStream);
+             FileOutputStream out = new FileOutputStream(outputFilename)) {
+            final byte[] buffer = new byte[4096];
+            int n;
+            while (-1 != (n = gzIn.read(buffer))) {
+                out.write(buffer, 0, n);
+            }
         }
-        out.close();
-        gzIn.close();
         logger.info("unGzipFile filename {}", zipFilename);
     }
 
+    //strip only a trailing extension - a blind replace() would mangle paths like /data.gz/file.gz
+    private static String stripCompressionExtension(String filename, String extension) {
+        if (!filename.endsWith(extension)) {
+            throw new IllegalArgumentException("Compressed file " + filename + " does not end with " + extension);
+        }
+        return filename.substring(0, filename.length() - extension.length());
+    }
+
     public static void unBzip2File(String bz2Filename) throws IOException {
-        String outputFilename = bz2Filename.replace(".bz2", "");
+        String outputFilename = stripCompressionExtension(bz2Filename, ".bz2");
         try (
                 FileInputStream fileInputStream = new FileInputStream(bz2Filename);
                 BZip2CompressorInputStream bzIn = new BZip2CompressorInputStream(fileInputStream);
@@ -613,6 +622,10 @@ public class FileUtility {
     }
 
     public static String zipDirectory(String directoryName, boolean recursive) throws Exception {
+        return zipDirectory(directoryName, recursive, false);
+    }
+
+    private static String zipDirectory(String directoryName, boolean recursive, boolean useTemp) throws Exception {
         File directory = new File(directoryName);
 
         if (!directory.isDirectory()) {
@@ -621,7 +634,6 @@ public class FileUtility {
 
         String endPath = directory.getName();
 
-//        String zipFilename = directory.getAbsolutePath() + File.separator + endPath + ".zip";
         String zipFilename = getTimeStampFilename(endPath + ".zip");
         if (useTemp) {
             zipFilename = System.getProperty("java.io.tmpdir") + "/" + zipFilename;
@@ -659,12 +671,12 @@ public class FileUtility {
     }
 
     public static boolean fileExists(String filename) throws Exception {
-        if (dir(filename).length > 0) {
-            return true;
-        }
-        else {
+        var directoryName = getFilePath(filename);
+        if ("".equals(directoryName)) directoryName = ".";
+        if (!new File(directoryName).isDirectory()) {
             return false;
         }
+        return dir(filename).length > 0;
     }
 
     public static boolean fileContentEquals(String filename1, String filename2) throws IOException {
@@ -713,23 +725,18 @@ public class FileUtility {
     }
 
     public static String archiveZipDirectoryWithDate(String sourceDirectoryName, String targetDirectory, String dateFormat) throws Exception{
-        useTemp = true;
-        String zipFilename = zipDirectory(sourceDirectoryName, true);
-        archiveFile(zipFilename, targetDirectory);
+        String zipFilename = zipDirectory(sourceDirectoryName, true, true);
+        archiveFile(zipFilename, targetDirectory, dateFormat);
         cleanDirectory(sourceDirectoryName);
-        useTemp = false;
         return zipFilename;
     }
 
     public static String fileCalculateSHA1(String filename) throws Exception {
-        File file = new File(filename);
-        String sha1 = org.apache.commons.codec.digest.DigestUtils.sha1Hex(new FileInputStream(file));
+        String sha1;
+        try (FileInputStream fileInputStream = new FileInputStream(filename)) {
+            sha1 = org.apache.commons.codec.digest.DigestUtils.sha1Hex(fileInputStream);
+        }
         logger.info("SHA1 for file {} is {}", filename, sha1);
         return sha1;
-    }
-
-    public static void main(String[] args) throws Exception {
-        var sha1 = fileCalculateSHA1("/opt/data/localfile.txt");
-        System.out.println(sha1);
     }
 }
