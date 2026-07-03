@@ -1,0 +1,12 @@
+# JAMS job scheduler configuration (JamsUtility)
+# Copy into your script project's resources as jams.properties and load with:
+#     jamsLogin("jams.properties")
+# or fold the keys into application.properties for the no-arg jamsLogin().
+#
+# Environment variable equivalents (always win over this file):
+#     jams.url -> JAMS_URL      jams.user -> JAMS_USER      jams.password -> JAMS_PASSWORD
+
+jams.url = https://jams.example.com
+# username/password from JAMS_USER / JAMS_PASSWORD by convention, or explicitly:
+#jams.user = ${ENV:JAMS_AUTOMATION_USER}
+#jams.password = ${ENV:JAMS_AUTOMATION_PASSWORD}

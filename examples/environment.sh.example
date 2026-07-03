@@ -1,0 +1,82 @@
+# Complete environment variable reference for jvmscript utilities.
+#
+# Every property key maps to an environment variable by convention:
+# uppercase, with dots/dashes replaced by underscores (sftp.password -> SFTP_PASSWORD).
+# An environment variable always wins over the properties file, so these can be
+# set by a job scheduler (JAMS), HashiCorp Vault agent, Kubernetes, systemd, or
+# a wrapper script - no properties file changes needed.
+#
+# Sourcing this file directly is only for local testing; in production have the
+# scheduler or secret manager inject these into the job's environment instead.
+#
+# With every value in the environment, no properties file is needed at all: the
+# no-arg open methods (e.g. sFtpOpenConnection()) tolerate a missing
+# application.properties, log the absence, and resolve entirely from here.
+
+# --- SFTP (SftpUtility) ---
+export SFTP_SERVER=sftp.example.com
+export SFTP_PORT=22
+export SFTP_USER=batchuser
+export SFTP_PASSWORD=change-me
+#export SFTP_IDENTITY=/home/batchuser/.ssh/id_rsa    # private key instead of password
+
+# --- FTP (FtpUtility) ---
+export FTP_SERVER=ftp.example.com
+export FTP_PORT=21
+export FTP_USER=batchuser
+export FTP_PASSWORD=change-me
+
+# --- SSH / SCP (SSHUtility) ---
+export SSH_SERVER=host.example.com
+export SSH_PORT=22
+export SSH_USER=batchuser
+export SSH_PASSWORD=change-me
+
+# --- Database (SqlUtility) ---
+export DB_URL=jdbc:postgresql://db.example.com:5432/appdb
+export DB_USER=appuser
+export DB_PASSWORD=change-me
+
+# --- IMAP email (EmailUtility) ---
+export IMAP_SERVER=outlook.office365.com
+export IMAP_USER=batch-mailbox@example.com
+export IMAP_PASSWORD=change-me
+
+# --- Office365 OAuth (EmailUtility.openOffice365ImapConnection) ---
+export OFFICE365_TENANTID=00000000-0000-0000-0000-000000000000
+export OFFICE365_CLIENTID=00000000-0000-0000-0000-000000000000
+export OFFICE365_CLIENTSECRET=change-me
+
+# --- SMTP email (EmailUtility) ---
+export SMTP_SERVER=smtp.example.com
+export SMTP_PORT=465
+export SMTP_USER=batch-mailbox@example.com
+export SMTP_PASSWORD=change-me
+#export SMTP_AUTH=true
+#export SMTP_TLS=true
+
+# --- JAMS job scheduler (JamsUtility) ---
+export JAMS_URL=https://jams.example.com
+export JAMS_USER=automation
+export JAMS_PASSWORD=change-me
+
+# --- Jira (JiraUtility) ---
+export JIRA_URL=https://yourcompany.atlassian.net
+export JIRA_USERNAME=automation@example.com
+export JIRA_APITOKEN=change-me                       # camelCase key jira.apiToken -> JIRA_APITOKEN
+
+# --- AWS S3 (S3Utility) ---
+# CAUTION: S3Utility reads unprefixed property keys (region, accessKeyId,
+# secretAccessKey), whose conventional variable names (REGION, ACCESSKEYID,
+# SECRETACCESSKEY) are generic enough to collide with unrelated variables.
+# Prefer the ${ENV:...} placeholder form in s3.properties instead, pointing at
+# the standard AWS names (see s3.properties.example):
+#export AWS_ACCESS_KEY_ID=change-me
+#export AWS_SECRET_ACCESS_KEY=change-me
+# On AWS infrastructure, prefer IAM roles / instance profiles over static keys.
+
+# --- Not environment-driven ---
+# Box (BoxUtility): configured via box.json, parsed directly by the Box SDK -
+#   protect the file with filesystem permissions. See box.json.example.
+# PGP (PgpUtility): key paths and passphrases are explicit method arguments -
+#   in a script, pass System.getenv("PGP_PASSPHRASE") yourself.

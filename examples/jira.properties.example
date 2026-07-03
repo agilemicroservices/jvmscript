@@ -1,0 +1,13 @@
+# Jira configuration (JiraUtility)
+# Copy into your script project's resources as jira.properties - this is the
+# default filename for the no-arg openJiraConnection().
+#
+# Environment variable equivalents (always win over this file):
+#     jira.url      -> JIRA_URL
+#     jira.username -> JIRA_USERNAME
+#     jira.apiToken -> JIRA_APITOKEN   (camelCase collapses: apiToken -> APITOKEN)
+
+jira.url = https://yourcompany.atlassian.net
+# username/token from JIRA_USERNAME / JIRA_APITOKEN by convention, or explicitly:
+#jira.username = ${ENV:JIRA_AUTOMATION_USER}
+#jira.apiToken = ${ENV:JIRA_AUTOMATION_TOKEN}

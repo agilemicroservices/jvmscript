@@ -1,0 +1,15 @@
+# Example email configuration - copy into your script project's resources as
+# imap.properties. See application.properties.example for the full explanation
+# of environment-variable resolution.
+
+imap.server = outlook.office365.com
+# username and password resolved from IMAP_USER / IMAP_PASSWORD by convention;
+# equivalently, reference explicit variables:
+#imap.user = ${ENV:BATCH_MAILBOX_USER}
+#imap.password = ${ENV:BATCH_MAILBOX_PASSWORD}
+
+# Office365 OAuth client credentials - tenant/client ids are not secret,
+# the secret comes from OFFICE365_CLIENTSECRET by convention (or a placeholder)
+office365.tenantId = 00000000-0000-0000-0000-000000000000
+office365.clientId = 00000000-0000-0000-0000-000000000000
+#office365.clientSecret = ${ENV:OFFICE365_CLIENT_SECRET}

@@ -1,0 +1,12 @@
+# Database configuration (SqlUtility)
+# Copy into your script project's resources as db.properties and load with:
+#     openSqlConnection("db.properties")
+# or fold the keys into application.properties for the no-arg openSqlConnection().
+#
+# Environment variable equivalents (always win over this file):
+#     db.url -> DB_URL      db.user -> DB_USER      db.password -> DB_PASSWORD
+
+db.url = jdbc:postgresql://db.example.com:5432/appdb
+# username/password from DB_USER / DB_PASSWORD by convention, or explicitly:
+#db.user = ${ENV:APP_DB_USER}
+#db.password = ${ENV:APP_DB_PASSWORD}

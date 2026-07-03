@@ -1,0 +1,17 @@
+# SMTP email configuration (EmailUtility)
+# Copy into your script project's resources as smtp.properties and load with:
+#     openSmtpConnection("smtp.properties")
+# or fold the keys into application.properties for the no-arg openSmtpConnection().
+#
+# Environment variable equivalents (always win over this file):
+#     smtp.server -> SMTP_SERVER      smtp.port     -> SMTP_PORT
+#     smtp.user   -> SMTP_USER        smtp.password -> SMTP_PASSWORD
+#     smtp.auth   -> SMTP_AUTH        smtp.tls      -> SMTP_TLS
+
+smtp.server = smtp.example.com
+smtp.port = 465
+#smtp.auth = true
+#smtp.tls = true
+# username/password from SMTP_USER / SMTP_PASSWORD by convention, or explicitly:
+#smtp.user = ${ENV:BATCH_MAILBOX_USER}
+#smtp.password = ${ENV:BATCH_MAILBOX_PASSWORD}

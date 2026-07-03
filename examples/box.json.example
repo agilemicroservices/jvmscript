@@ -1,0 +1,13 @@
+{
+  "_comment": "Example Box JWT app config - copy into your script project's resources as box.json. Download the real file from the Box developer console (App Settings > Configuration). NOTE: box.json is consumed directly by the Box SDK, so ${ENV:...} placeholders do NOT work here - protect this file with filesystem permissions and keep it out of version control.",
+  "boxAppSettings": {
+    "clientID": "YOUR_CLIENT_ID",
+    "clientSecret": "YOUR_CLIENT_SECRET",
+    "appAuth": {
+      "publicKeyID": "YOUR_PUBLIC_KEY_ID",
+      "privateKey": "-----BEGIN ENCRYPTED PRIVATE KEY-----\n...\n-----END ENCRYPTED PRIVATE KEY-----\n",
+      "passphrase": "YOUR_PASSPHRASE"
+    }
+  },
+  "enterpriseID": "YOUR_ENTERPRISE_ID"
+}

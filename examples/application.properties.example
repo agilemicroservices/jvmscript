@@ -1,0 +1,76 @@
+# Example jvmscript configuration - copy into your script project's resources
+# as application.properties (and keep it out of version control if it holds secrets).
+#
+# This combined file serves the no-arg open methods (sFtpOpenConnection(), etc.).
+# Prefer per-service files instead? Each utility has a matching example
+# (sftp.properties.example, ftp.properties.example, ssh.properties.example,
+# db.properties.example, smtp.properties.example, imap.properties.example,
+# jams.properties.example, jira.properties.example, s3.properties.example)
+# loaded by name: sFtpOpenConnection("sftp.properties").
+#
+# Fully environment-driven? application.properties may be omitted entirely -
+# the no-arg open methods log the absence and resolve everything from the
+# environment. An explicitly named file must exist, since naming it states intent.
+#
+# Values can come from three places, checked in this order:
+#
+#   1. Environment variable, mapped by convention: sftp.password -> SFTP_PASSWORD
+#      (uppercase, dots/dashes become underscores). Best for anything secret or
+#      environment-specific - inject via your job scheduler, HashiCorp Vault agent,
+#      Kubernetes, etc. A variable set in the environment always wins over this file.
+#      See environment.sh.example for the complete variable list per utility.
+#   2. Java system property: -Dsftp.password=...
+#   3. This file.
+#
+# Recommended split:
+#   - Structural, non-secret config (servers, ports, URLs) lives here as plain values.
+#   - Usernames and credentials come from the environment: either omit them here
+#     entirely (the naming convention finds them), or reference a specific variable
+#     with ${ENV:VARIABLE_NAME} as shown below. A missing referenced variable fails
+#     at connection time with a clear error - never a silent default.
+
+# --- SFTP ---
+sftp.server = sftp.example.com
+sftp.port = 22
+# username and password resolved from SFTP_USER / SFTP_PASSWORD by convention;
+# equivalently, reference explicit variables:
+#sftp.user = ${ENV:SFTP_PROD_USER}
+#sftp.password = ${ENV:SFTP_PROD_PASSWORD}
+# or use a private key instead of a password:
+#sftp.identity = /home/batchuser/.ssh/id_rsa
+# host key verification (on by default) can pin a known_hosts file or fingerprint
+# via sFtpSetKnownHostsFile() / sFtpSetHostKeyFingerprint() in the script
+
+# --- FTP ---
+ftp.server = ftp.example.com
+# ftp.user / ftp.password from FTP_USER / FTP_PASSWORD
+
+# --- SSH / SCP ---
+ssh.server = host.example.com
+ssh.port = 22
+# ssh.user / ssh.password from SSH_USER / SSH_PASSWORD
+
+# --- Database (SqlUtility) ---
+db.url = jdbc:postgresql://db.example.com:5432/appdb
+# db.user / db.password from DB_USER / DB_PASSWORD
+
+# --- IMAP email (EmailUtility) ---
+imap.server = outlook.office365.com
+# imap.user / imap.password from IMAP_USER / IMAP_PASSWORD
+# Office365 OAuth: office365.tenantId / clientId / clientSecret from
+# OFFICE365_TENANTID / OFFICE365_CLIENTID / OFFICE365_CLIENTSECRET
+
+# --- SMTP (EmailUtility) ---
+smtp.server = smtp.example.com
+smtp.port = 465
+#smtp.auth = true
+#smtp.tls = true
+# smtp.user / smtp.password from SMTP_USER / SMTP_PASSWORD
+
+# --- JAMS job scheduler ---
+jams.url = https://jams.example.com
+# jams.user / jams.password from JAMS_USER / JAMS_PASSWORD
+
+# --- Jira ---
+jira.url = https://yourcompany.atlassian.net
+# jira.username from JIRA_USERNAME; jira.apiToken from JIRA_APITOKEN

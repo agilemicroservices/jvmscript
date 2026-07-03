@@ -1,0 +1,14 @@
+# FTP configuration (FtpUtility)
+# Copy into your script project's resources as ftp.properties and load with:
+#     ftpOpenConnection("ftp.properties")
+# or fold the keys into application.properties for the no-arg ftpOpenConnection().
+#
+# Environment variable equivalents (always win over this file):
+#     ftp.server -> FTP_SERVER      ftp.port     -> FTP_PORT
+#     ftp.user   -> FTP_USER        ftp.password -> FTP_PASSWORD
+
+ftp.server = ftp.example.com
+ftp.port = 21
+# username/password from FTP_USER / FTP_PASSWORD by convention, or explicitly:
+#ftp.user = ${ENV:FTP_PROD_USER}
+#ftp.password = ${ENV:FTP_PROD_PASSWORD}

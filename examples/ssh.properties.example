@@ -1,0 +1,18 @@
+# SSH / SCP configuration (SSHUtility)
+# Copy into your script project's resources as ssh.properties and load with:
+#     SSHOpenConnection("ssh.properties")
+# or fold the keys into application.properties for the no-arg SSHOpenConnection().
+#
+# Environment variable equivalents (always win over this file):
+#     ssh.server -> SSH_SERVER      ssh.port     -> SSH_PORT
+#     ssh.user   -> SSH_USER        ssh.password -> SSH_PASSWORD
+
+ssh.server = host.example.com
+ssh.port = 22
+# username/password from SSH_USER / SSH_PASSWORD by convention, or explicitly:
+#ssh.user = ${ENV:SSH_PROD_USER}
+#ssh.password = ${ENV:SSH_PROD_PASSWORD}
+
+# Host key verification is ON by default (checks ~/.ssh/known_hosts). To pin a
+# key or opt out, use SSHSetKnownHostsFile() / SSHSetHostKeyFingerprint() /
+# SSHDisableHostKeyVerification() in the script before connecting.
