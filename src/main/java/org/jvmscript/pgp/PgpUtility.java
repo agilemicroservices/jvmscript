@@ -1,6 +1,6 @@
 package org.jvmscript.pgp;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.bouncycastle.bcpg.ArmoredOutputStream;
 import org.bouncycastle.bcpg.CompressionAlgorithmTags;
 import org.bouncycastle.bcpg.HashAlgorithmTags;
@@ -13,15 +13,17 @@ import org.bouncycastle.openpgp.operator.PBESecretKeyEncryptor;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.*;
 import org.bouncycastle.util.io.Streams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
-
-import static org.jvmscript.log.LogUtility.logger;
 
 
 /**
@@ -29,6 +31,10 @@ import static org.jvmscript.log.LogUtility.logger;
  * layers, a streaming layer and a file oriented layer.  The streaming layer provides the greatest amount of flexibility
  * and is primarily intended for use in enterprise systems.  The file oriented layer provides the simplest interface and
  * is primarily intended for scripts.
+ * <p>
+ * Data is encrypted with AES-256 and an integrity (MDC) packet by default.  Decryption accepts both plain encrypted
+ * and sign-then-encrypt messages (signatures are skipped, not verified).  A failed integrity check throws and, in the
+ * file oriented layer, removes the output file.
  * <p>
  * The following example illustrates using the file oriented API.
  * <pre><code>
@@ -39,44 +45,18 @@ import static org.jvmscript.log.LogUtility.logger;
  * <p>
  * The following example illustrates use of the streaming API.
  * <pre><code>
- *     PGPKeyPair keyPair = generateKeyPair(pubOut, privOut, "johndoe", "secret");
+ *     PGPKeyPair keyPair = generateKeyPair();
  *
  *     FileInputStream clearInput = new FileInputStream("example.txt");
  *     FileOutputStream cipherOutput = new FileOutputStream("example.dat");
- *     encryptStream(clearInput, cipherOutput, keyPair.getPublicKey());
- *
- *     FileInputStream cipherInput = new FileInputStream("example.dat");
- *     FileOutputStream clearOutput = new FileOutputStream("example2.txt");
- *     decryptStream(cipherInput, clearOutput, keyPair.getPrivateKey());
- * </code></pre>
- * <p>
- * The following example illustrates use of the streaming API to save a generated key pair to files.
- * <pre><code>
- *     PGPKeyPair keyPair = generateKeyPair(pubOut, privOut, "johndoe", "secret");
- *     FileOutputStream pubOutput = new FileOutputStream("pub.asc");
- *     FileOutputStream privOutput = new FileOutputStream("priv.asc");
- *     writeKeyPair(keyPair, pubOutput, privOutput);
+ *     encrypt(clearInput, "example.txt", cipherOutput, keyPair.getPublicKey(), true, true);
  * </code></pre>
  */
 public final class PgpUtility {
+    private static final Logger logger = LoggerFactory.getLogger(PgpUtility.class);
     private static final BouncyCastleProvider PROVIDER = new BouncyCastleProvider();
     private static final int DEFAULT_KEY_SIZE = 4096;
-
-
-    public static void main(String[] args) {
-
-        final String DIRECTORY = "/tmp/encrypt/";
-        final String USER_PUBLIC_KEY = DIRECTORY + "user-pub.asc";
-        final String USER_PRIVATE_KEY = DIRECTORY + "user-priv.asc";
-        final String MASTER_PUBLIC_KEY = DIRECTORY + "master-pub.asc";
-        final String MASTER_PRIVATE_KEY = DIRECTORY + "pgptest/master-priv.asc";
-
-        generateKeyPairFiles(USER_PUBLIC_KEY, USER_PRIVATE_KEY, "johndoe", "secret");
-        generateKeyPairFiles(MASTER_PUBLIC_KEY, MASTER_PRIVATE_KEY, "master", "mypass");
-        encryptFile("/tmp/hello.txt", "/tmp/hello.dat", new String[] {USER_PUBLIC_KEY, MASTER_PUBLIC_KEY});
-        decryptFile("/tmp/hello.dat", "/tmp/user-hello.txt", USER_PRIVATE_KEY, "secret");
-        decryptFile("/tmp/hello.dat", "/tmp/master-hello.txt", MASTER_PRIVATE_KEY, "mypass");
-    }
+    private static final int BUFFER_SIZE = 1 << 16;
 
 
     private PgpUtility() {
@@ -114,11 +94,10 @@ public final class PgpUtility {
 
     public static void writeKeyPairFile(PGPKeyPair keyPair, String publicKeyFileName, String privateKeyFileName,
                                         String keyUserId, String password, boolean armor) {
-        try {
-            OutputStream publicKeyOutputStream = new FileOutputStream(publicKeyFileName);
-            OutputStream privateKeyOutputStream = new FileOutputStream(privateKeyFileName);
+        try (OutputStream publicKeyOutputStream = new FileOutputStream(publicKeyFileName);
+             OutputStream privateKeyOutputStream = new FileOutputStream(privateKeyFileName)) {
             writeKeyPair(keyPair, publicKeyOutputStream, privateKeyOutputStream, keyUserId, password, armor);
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -133,16 +112,17 @@ public final class PgpUtility {
 
         PGPSecretKey secretKey;
         try {
+            //the SHA1 digest calculator is the OpenPGP secret key checksum, fixed by the spec - not a signature hash
             PGPDigestCalculator digestCalculator = new JcaPGPDigestCalculatorProviderBuilder()
                     .setProvider(PROVIDER)
                     .build()
                     .get(HashAlgorithmTags.SHA1);
             PBESecretKeyEncryptor encryptor =
-                    new JcePBESecretKeyEncryptorBuilder(PGPEncryptedData.CAST5, digestCalculator)
+                    new JcePBESecretKeyEncryptorBuilder(PGPEncryptedData.AES_256, digestCalculator)
                             .setProvider(PROVIDER)
                             .build(password.toCharArray());
             JcaPGPContentSignerBuilder signerBuilder = new JcaPGPContentSignerBuilder(
-                    keyPair.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA1).setProvider(PROVIDER);
+                    keyPair.getPublicKey().getAlgorithm(), HashAlgorithmTags.SHA256).setProvider(PROVIDER);
             secretKey = new PGPSecretKey(PGPSignature.DEFAULT_CERTIFICATION,
                     keyPair,
                     keyUserId,
@@ -154,7 +134,6 @@ public final class PgpUtility {
 
             secretKey.encode(privateKeyOutputStream);
             secretKey.getPublicKey().encode(publicKeyOutputStream);
-            // TODO should these be closed here or in writeKeyPairFile?
             privateKeyOutputStream.close();
             publicKeyOutputStream.close();
         } catch (PGPException | IOException e) {
@@ -163,16 +142,11 @@ public final class PgpUtility {
     }
 
     public static PGPPublicKey readPublicKeyFile(String fileName) {
-        PGPPublicKey pubKey;
-        try {
-            InputStream keyIn = new BufferedInputStream(new FileInputStream(fileName));
-            pubKey = readPublicKey(keyIn);
-            keyIn.close();
+        try (InputStream keyIn = new BufferedInputStream(new FileInputStream(fileName))) {
+            return readPublicKey(keyIn);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-
-        return pubKey;
     }
 
     public static PGPPublicKey readPublicKey(InputStream inputStream) {
@@ -251,21 +225,17 @@ public final class PgpUtility {
 
     public static void encryptFile(String inputFileName, String outputFileName, String[] publicKeyFileName,
                                    boolean armor, boolean integrityCheck) {
-        InputStream inputStream;
-        OutputStream outputStream;
-        try {
-            inputStream = new FileInputStream(inputFileName);
-            outputStream = new BufferedOutputStream(new FileOutputStream(outputFileName));
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-
         PGPPublicKey[] publicKeys = new PGPPublicKey[publicKeyFileName.length];
         for (int i = 0; i < publicKeyFileName.length; i++) {
             publicKeys[i] = readPublicKeyFile(publicKeyFileName[i]);
         }
 
-        encrypt(inputStream, inputFileName, outputStream, publicKeys, armor, integrityCheck);
+        try (InputStream inputStream = new FileInputStream(inputFileName);
+             OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFileName))) {
+            encrypt(inputStream, inputFileName, outputStream, publicKeys, armor, integrityCheck);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
 
@@ -274,31 +244,45 @@ public final class PgpUtility {
         encrypt(inputStream, inputFileName, outputStream, new PGPPublicKey[]{publicKey}, armor, integrityCheck);
     }
 
+    /**
+     * Encrypts {@code inputStream} to {@code outputStream} for the given recipients, streaming - the input is never
+     * fully buffered in memory.  Closes the wrappers it creates but not the caller's streams; the caller is
+     * responsible for closing both streams.
+     */
     public static void encrypt(InputStream inputStream, String inputFileName, OutputStream outputStream,
                                PGPPublicKey[] publicKey, boolean armor, boolean integrityCheck) {
-        if (armor) {
-            outputStream = new ArmoredOutputStream(outputStream);
-        }
+        OutputStream armoredStream = armor ? new ArmoredOutputStream(outputStream) : outputStream;
 
         try {
-            byte[] bytes = toLiteralZipByteArray(inputStream, inputFileName);
             PGPEncryptedDataGenerator encGen = new PGPEncryptedDataGenerator(
-                    new JcePGPDataEncryptorBuilder(PGPEncryptedData.CAST5)
+                    new JcePGPDataEncryptorBuilder(PGPEncryptedData.AES_256)
                             .setWithIntegrityPacket(integrityCheck)
                             .setSecureRandom(new SecureRandom())
                             .setProvider(PROVIDER));
 
-            for (int i = 0; i < publicKey.length; i++) {
-                encGen.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(publicKey[i]).setProvider(PROVIDER));
+            for (PGPPublicKey key : publicKey) {
+                encGen.addMethod(new JcePublicKeyKeyEncryptionMethodGenerator(key).setProvider(PROVIDER));
             }
 
-            OutputStream encryptedOutputStream = encGen.open(outputStream, bytes.length);
-            encryptedOutputStream.write(bytes);
-            encryptedOutputStream.close();
+            OutputStream encryptedStream = encGen.open(armoredStream, new byte[BUFFER_SIZE]);
+            PGPCompressedDataGenerator compressedGenerator = new PGPCompressedDataGenerator(CompressionAlgorithmTags.ZIP);
+            OutputStream compressedStream = compressedGenerator.open(encryptedStream);
+
+            //embed only the base filename in the literal data packet, not the local path
+            PGPLiteralDataGenerator literalGenerator = new PGPLiteralDataGenerator();
+            OutputStream literalStream = literalGenerator.open(compressedStream, PGPLiteralDataGenerator.BINARY,
+                    FilenameUtils.getName(inputFileName), new Date(), new byte[BUFFER_SIZE]);
+
+            Streams.pipeAll(inputStream, literalStream);
+
+            literalStream.close();
+            compressedGenerator.close();
+            encryptedStream.close();
 
             if (armor) {
-                outputStream.close();
+                armoredStream.close();
             }
+            outputStream.flush();
         } catch (IOException | PGPException e) {
             throw new IllegalStateException(e);
         }
@@ -310,13 +294,24 @@ public final class PgpUtility {
     //
 
     public static void decryptFile(String inputFileName, String outputFileName, String privateKeyFileName, String password) {
-        try (
-            InputStream inputStream = new FileInputStream(inputFileName);
-            OutputStream outputStream = new FileOutputStream(outputFileName)
-        ) {
-            List<PGPPrivateKey> privateKeys = readPrivateKey(privateKeyFileName, password);
-            decrypt(inputStream, outputStream, privateKeys);
-        } catch (IOException e) {
+        try {
+            try (
+                InputStream inputStream = new FileInputStream(inputFileName);
+                OutputStream outputStream = new FileOutputStream(outputFileName)
+            ) {
+                List<PGPPrivateKey> privateKeys = readPrivateKey(privateKeyFileName, password);
+                decrypt(inputStream, outputStream, privateKeys);
+            }
+        } catch (Exception e) {
+            //never leave partial or tampered output behind for downstream jobs to pick up
+            try {
+                Files.deleteIfExists(Path.of(outputFileName));
+            } catch (IOException cleanupFailure) {
+                logger.warn("Could not remove partial output file {}: {}", outputFileName, cleanupFailure.getMessage());
+            }
+            if (e instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
             throw new IllegalStateException("File not found or IO error during decryption", e);
         }
     }
@@ -355,68 +350,34 @@ public final class PgpUtility {
                     new JcePublicKeyDataDecryptorFactoryBuilder().setProvider(PROVIDER).build(matchingPrivateKey));
                  OutputStream outStream = dataOutputStream) {
 
-                JcaPGPObjectFactory decryptedFactory = new JcaPGPObjectFactory(clearDataStream);
-                Object message = decryptedFactory.nextObject();
+                JcaPGPObjectFactory plainFactory = new JcaPGPObjectFactory(clearDataStream);
+                Object message = plainFactory.nextObject();
 
-                if (message instanceof PGPCompressedData) {
-                    JcaPGPObjectFactory compressedFactory = new JcaPGPObjectFactory(((PGPCompressedData) message).getDataStream());
-                    message = compressedFactory.nextObject();
+                //descend into compressed data and skip signature packets - partners commonly
+                //sign-then-encrypt; the signature is skipped, not verified
+                while (!(message instanceof PGPLiteralData)) {
+                    if (message instanceof PGPCompressedData) {
+                        plainFactory = new JcaPGPObjectFactory(((PGPCompressedData) message).getDataStream());
+                        message = plainFactory.nextObject();
+                    } else if (message instanceof PGPOnePassSignatureList || message instanceof PGPSignatureList) {
+                        message = plainFactory.nextObject();
+                    } else {
+                        throw new PGPException("Unknown message type; expected literal data but found " +
+                                (message == null ? "end of message" : message.getClass().getSimpleName()));
+                    }
                 }
 
-                if (message instanceof PGPLiteralData) {
-                    try (InputStream literalDataStream = ((PGPLiteralData) message).getInputStream()) {
-                        Streams.pipeAll(literalDataStream, outStream);
-                    }
-                } else if (message instanceof PGPOnePassSignatureList) {
-                    throw new PGPException("Encrypted message contains a signed message; expected literal data.");
-                } else {
-                    throw new PGPException("Unknown message type; expected simple encrypted file.");
+                try (InputStream literalDataStream = ((PGPLiteralData) message).getInputStream()) {
+                    Streams.pipeAll(literalDataStream, outStream);
                 }
 
                 if (encryptedData.isIntegrityProtected() && !encryptedData.verify()) {
-                    System.err.println("Warning: message failed integrity check");
-                    logger.warn("message failed integrity check");
-                } else {
-                    logger.info("message integrity check passed");
+                    throw new PGPException("Message failed integrity check - the data may have been tampered with or corrupted");
                 }
+                logger.info("message integrity check passed");
             }
         } catch (PGPException | IOException e) {
             throw new IllegalStateException("Error during decryption process", e);
-        }
-    }
-
-
-    //
-    // ENCODING
-    //
-
-    private static byte[] toLiteralZipByteArray(InputStream in, String fileName)
-            throws IOException {
-        return toLiteralZipByteArray(in, fileName, new Date());
-    }
-
-    private static byte[] toLiteralZipByteArray(InputStream in, String fileName, Date lastModified)
-            throws IOException {
-        PGPCompressedDataGenerator comData = new PGPCompressedDataGenerator(CompressionAlgorithmTags.ZIP);
-        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-        OutputStream outputStream = comData.open(bOut);
-        writeStreamToLiteralData(outputStream, in, fileName, lastModified);
-        comData.close();
-        return bOut.toByteArray();
-    }
-
-    private static void writeStreamToLiteralData(OutputStream outputStream, InputStream inputStream, String fileName,
-                                                 Date lastModified) {
-        PGPLiteralDataGenerator lData = new PGPLiteralDataGenerator();
-        try {
-            byte[] bytes = IOUtils.toByteArray(inputStream);
-            OutputStream pOut = lData.open(outputStream, PGPLiteralDataGenerator.BINARY, fileName, bytes.length,
-                    lastModified);
-            IOUtils.write(bytes, pOut);
-            pOut.close();
-            inputStream.close(); // TODO should this be closed here?
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
         }
     }
 }
