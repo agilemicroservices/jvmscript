@@ -62,13 +62,11 @@ public class SqlUtility {
     }
 
     public static void openSqlConnection(String propertyFile) throws IOException {
-        Properties properties = new Properties();
-        InputStream inputStream = SqlUtility.class.getResourceAsStream("/" + propertyFile);
-        properties.load(inputStream);
+        org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath(propertyFile);
 
-        String dbUrl = properties.getProperty("db.url");
-        String user = properties.getProperty("db.user");
-        String password = properties.getProperty("db.password");
+        String dbUrl = org.jvmscript.property.PropertyUtility.propertyGet("db.url");
+        String user = org.jvmscript.property.PropertyUtility.propertyGet("db.user");
+        String password = org.jvmscript.property.PropertyUtility.propertyGet("db.password");
 
         openSqlConnection(dbUrl,user,password);
     }

@@ -2,8 +2,8 @@ package org.jvmscript.jams;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +14,7 @@ import static org.jvmscript.http.HttpUtility.*;
 
 public class JamsUtility {
 
-    private static final Logger logger = LogManager.getLogger(JamsUtility.class);
+    private static final Logger logger = LoggerFactory.getLogger(JamsUtility.class);
 
     public static String access_token;
     public static Long tokenExpiryTime = 0L;
@@ -27,14 +27,11 @@ public class JamsUtility {
     }
 
     public static void jamsLogin(String propertyFile) throws IOException {
-        Properties properties = new Properties();
-        InputStream inputStream = JamsUtility.class.getResourceAsStream("/" + propertyFile);
-        properties.load(inputStream);
+        org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath(propertyFile);
 
-        String url = properties.getProperty("jams.url");
-        String user = properties.getProperty("jams.user");
-        String password = properties.getProperty("jams.password");
-
+        String url = org.jvmscript.property.PropertyUtility.propertyGet("jams.url");
+        String user = org.jvmscript.property.PropertyUtility.propertyGet("jams.user");
+        String password = org.jvmscript.property.PropertyUtility.propertyGet("jams.password");
 
         jamsLogin(url, user, password);
     }
