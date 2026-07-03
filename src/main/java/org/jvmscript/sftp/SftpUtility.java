@@ -1,13 +1,12 @@
 package org.jvmscript.sftp;
 
-import net.schmizz.sshj.Config;
-import net.schmizz.sshj.DefaultConfig;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.sftp.RemoteResourceInfo;
 import net.schmizz.sshj.sftp.StatefulSFTPClient;
+import net.schmizz.sshj.transport.TransportException;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import net.schmizz.sshj.userauth.keyprovider.KeyProvider;
-import org.apache.logging.log4j.LogManager;
+import org.slf4j.LoggerFactory;
 import org.jvmscript.file.FileUtility;
 
 import java.io.File;
@@ -20,11 +19,15 @@ import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
 
 public class SftpUtility {
 
-    private static final org.apache.logging.log4j.Logger logger = LogManager.getLogger(SftpUtility.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SftpUtility.class);
 
     private static SSHClient sshClient = null;
     private static StatefulSFTPClient sftpClient = null;
     private static String keyFile = null;
+
+    private static boolean verifyHostKey = true;
+    private static String knownHostsFile = null;
+    private static String hostKeyFingerprint = null;
 
     private static String hostPort;
 
@@ -54,11 +57,33 @@ public class SftpUtility {
 
     public static void sFtpOpenConnection(String server, String user, String password, int port) throws Exception {
 
-        Config config = new DefaultConfig();
         sshClient = new SSHClient();
-        sshClient.addHostKeyVerifier(new PromiscuousVerifier());
-//        sshClient.loadKnownHosts();
-        sshClient.connect(server, port);
+
+        if (hostKeyFingerprint != null) {
+            sshClient.addHostKeyVerifier(hostKeyFingerprint);
+        }
+        else if (verifyHostKey) {
+            if (knownHostsFile != null) {
+                sshClient.loadKnownHosts(new File(knownHostsFile));
+            }
+            else {
+                sshClient.loadKnownHosts();
+            }
+        }
+        else {
+            logger.warn("sFtp host key verification is DISABLED, connection to {} is vulnerable to man-in-the-middle attacks", server);
+            sshClient.addHostKeyVerifier(new PromiscuousVerifier());
+        }
+
+        try {
+            sshClient.connect(server, port);
+        }
+        catch (TransportException e) {
+            logger.error("sFtp connection to {}:{} failed host key verification. Add the server key to ~/.ssh/known_hosts, " +
+                         "pin it with sFtpSetHostKeyFingerprint(), or call sFtpDisableHostKeyVerification() to opt out. Error: {}",
+                         server, port, e.getMessage());
+            throw e;
+        }
 
         if (keyFile != null) {
             var privateKeyFile = new File(keyFile);
@@ -132,6 +157,27 @@ public class SftpUtility {
         //no implementation
         logger.info("********* no implmentation SftpUtility.sFtpLPwd()");
         return "";
+    }
+
+    public static void sFtpDisableHostKeyVerification() {
+        logger.warn("SftpUtility.sFtpDisableHostKeyVerification host key verification disabled for subsequent connections");
+        verifyHostKey = false;
+    }
+
+    public static void sFtpEnableHostKeyVerification() {
+        logger.info("SftpUtility.sFtpEnableHostKeyVerification host key verification enabled for subsequent connections");
+        verifyHostKey = true;
+    }
+
+    public static void sFtpSetKnownHostsFile(String inputKnownHostsFile) {
+        logger.info("SftpUtility.sFtpSetKnownHostsFile known hosts file = {}", inputKnownHostsFile);
+        knownHostsFile = inputKnownHostsFile;
+    }
+
+    //accepts MD5 colon hex (e.g. "4b:69:6c:72..."), "SHA-1:base64" or "SHA-256:base64" fingerprints
+    public static void sFtpSetHostKeyFingerprint(String fingerprint) {
+        logger.info("SftpUtility.sFtpSetHostKeyFingerprint fingerprint = {}", fingerprint);
+        hostKeyFingerprint = fingerprint;
     }
 
     public static void sFtpAddIdentity(String inputKeyFile) {
