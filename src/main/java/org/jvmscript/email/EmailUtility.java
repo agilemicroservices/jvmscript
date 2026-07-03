@@ -2,39 +2,42 @@ package org.jvmscript.email;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicHeader;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import jakarta.mail.*;
 import jakarta.mail.internet.MimeMessage;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 
-import static java.nio.file.Files.readAllBytes;
+import static org.jvmscript.property.PropertyUtility.propertyGet;
+import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
 
 public class EmailUtility {
 
-    private static final Logger logger = LogManager.getLogger(EmailUtility.class);
+    private static final Logger logger = LoggerFactory.getLogger(EmailUtility.class);
 
     private static Folder imapFolder;
     private static Store imapStore;
     private static Session session;
     private static Transport smtpTransport;
-    private static String token;
+
+    //fresh Properties seeded with system properties as defaults: external -Dmail.*
+    //flags still apply, but mail settings no longer mutate global JVM state
+    private static Properties newMailProperties() {
+        return new Properties(System.getProperties());
+    }
 
     public static void openImapConnection(String server, String user, String password) throws Exception {
-        Properties props = System.getProperties();
+        Properties props = newMailProperties();
 
         props.put("mail.store.protocol", "imap");
         props.put("mail.imap.host", server);
@@ -56,15 +59,13 @@ public class EmailUtility {
     }
 
     public static void openOffice365ImapConnection(String propertyFilename) throws Exception {
-        Properties properties = new Properties();
-        InputStream inputStream = EmailUtility.class.getResourceAsStream("/" + propertyFilename);
-        properties.load(inputStream);
+        propertyOpenFileClassPath(propertyFilename);
 
-        String imapServer = properties.getProperty("imap.server");
-        String imapUser = properties.getProperty("imap.user");
-        String office365TenantId = properties.getProperty("office365.tenantId");
-        String office365ClientId = properties.getProperty("office365.clientId");
-        String office365ClientSecret = properties.getProperty("office365.clientSecret");
+        String imapServer = propertyGet("imap.server");
+        String imapUser = propertyGet("imap.user");
+        String office365TenantId = propertyGet("office365.tenantId");
+        String office365ClientId = propertyGet("office365.clientId");
+        String office365ClientSecret = propertyGet("office365.clientSecret");
 
         var token = getAuthToken(office365TenantId, office365ClientId, office365ClientSecret);
 
@@ -77,13 +78,11 @@ public class EmailUtility {
     }
 
     public static void openImapConnection(String propertyFilename) throws Exception {
-        Properties properties = new Properties();
-        InputStream inputStream = EmailUtility.class.getResourceAsStream("/" + propertyFilename);
-        properties.load(inputStream);
+        propertyOpenFileClassPath(propertyFilename);
 
-        String imapServer = properties.getProperty("imap.server");
-        String imapUser = properties.getProperty("imap.user");
-        String imapPassword = properties.getProperty("imap.password");
+        String imapServer = propertyGet("imap.server");
+        String imapUser = propertyGet("imap.user");
+        String imapPassword = propertyGet("imap.password");
 
         openImapConnection(imapServer, imapUser, imapPassword);
     }
@@ -93,45 +92,31 @@ public class EmailUtility {
     }
 
     public static void openSmtpConnection(String propertyFilename) throws Exception {
-        Properties properties = new Properties();
-        InputStream inputStream = EmailUtility.class.getResourceAsStream("/" + propertyFilename);
-        properties.load(inputStream);
+        propertyOpenFileClassPath(propertyFilename);
 
-        String smtpServer = properties.getProperty("smtp.server");
-        String smtpUser = properties.getProperty("smtp.user");
-        String smtpPassword = properties.getProperty("smtp.password");
-        String smtpPort = properties.getProperty("smtp.port", "465");
-        String auth = properties.getProperty("smtp.auth", "true");
-        String tls = properties.getProperty("smtp.tls", "true");
+        String smtpServer = propertyGet("smtp.server");
+        String smtpUser = propertyGet("smtp.user");
+        String smtpPassword = propertyGet("smtp.password");
+        String smtpPort = propertyGet("smtp.port") != null ? propertyGet("smtp.port") : "465";
+        String auth = propertyGet("smtp.auth") != null ? propertyGet("smtp.auth") : "true";
+        String tls = propertyGet("smtp.tls") != null ? propertyGet("smtp.tls") : "true";
 
         openSmtpConnection(smtpServer, smtpPort, smtpUser, smtpPassword, auth, tls);
     }
 
     public static void openSmtpConnection(String server, String smtpPort, String user, String password) throws Exception {
-        Properties props = System.getProperties();
-        props.setProperty("mail.smtp.port",smtpPort);
-        props.setProperty("mail.smtp.auth", "true");
-        props.setProperty("mail.smtp.starttls.enable", "true");
-        props.setProperty("mail.smtp.host",server);
-        props.setProperty("mail.smtp.from",user);
-
-        session = Session.getDefaultInstance(props, null);
-
-        smtpTransport = session.getTransport();
-        smtpTransport.connect(user, password);
-
         openSmtpConnection(server, smtpPort, user, password, "true", "true");
     }
 
     public static void openSmtpConnection(String server, String smtpPort, String user, String password, String auth, String tls) throws Exception {
-        Properties props = System.getProperties();
+        Properties props = newMailProperties();
         props.setProperty("mail.smtp.port",smtpPort);
         props.setProperty("mail.smtp.auth", auth);
         props.setProperty("mail.smtp.starttls.enable", tls);
         props.setProperty("mail.smtp.host", server);
         props.setProperty("mail.smtp.from", user);
 
-        session = Session.getDefaultInstance(props, null);
+        session = Session.getInstance(props);
 
         smtpTransport = session.getTransport();
         smtpTransport.connect(user, password);
@@ -183,47 +168,31 @@ public class EmailUtility {
         imapFolder.expunge();
     }
 
-    public static void main(String[] args) throws Exception{
-
-//
-        var app = new EmailUtility();
-//        var token = app.getAuthToken("3df9da5c-da1d-4d7f-8f3c-5e6b3bd2b1ae", "fa483d17-3402-42f9-a732-5332cc80520d", "Zjl8Q~rCKLiTZFp6NKUD6mekH1I-TpyLbVtzpcmO");
-////        System.out.println(token);
-//
-//        EmailUtility.openImapConnection("outlook.office365.com", "Bluesheetrecorder@vfmarkets.com", token);
-
-        EmailUtility.openOffice365ImapConnection("imap.properties");
-        EmailUtility.openImapFolder("Inbox");
-        var message = EmailUtility.getFirstEmailMessageInFolder();
-        var subject = message.getSubject();
-        var from = message.getSenderAddress();
-        var contentType = message.message.getContentType();
-
-        var txt = message.getText();
-
-        EmailUtility.closeImapConnection();
-    }
-
-    public static String getAuthToken(String tenantId,String clientId,String clientSecret) throws ClientProtocolException, IOException {
-        CloseableHttpClient client = HttpClients.createDefault();
-        HttpPost loginPost = new HttpPost("https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token");
+    public static String getAuthToken(String tenantId, String clientId, String clientSecret) throws IOException, InterruptedException {
         String scopes = "https://outlook.office365.com/.default";
-        String encodedBody = "client_id=" + clientId +
-                             "&scope=" + scopes +
-                             "&client_secret=" + clientSecret +
+        String encodedBody = "client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8) +
+                             "&scope=" + URLEncoder.encode(scopes, StandardCharsets.UTF_8) +
+                             "&client_secret=" + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8) +
                              "&grant_type=client_credentials";
 
-        loginPost.setEntity(new StringEntity(encodedBody, ContentType.APPLICATION_FORM_URLENCODED));
-        loginPost.addHeader(new BasicHeader("cache-control", "no-cache"));
-        CloseableHttpResponse loginResponse = client.execute(loginPost);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token"))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(encodedBody))
+                .build();
 
-        InputStream inputStream = loginResponse.getEntity().getContent();
-        byte[] response = inputStream.readAllBytes();
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new IOException("Office365 token request for client " + clientId +
+                    " failed with status " + response.statusCode() + ": " + response.body());
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         JavaType type = objectMapper.constructType(
                 objectMapper.getTypeFactory().constructParametricType(Map.class, String.class, String.class));
-        Map<String, String> parsed = new ObjectMapper().readValue(response, type);
+        Map<String, String> parsed = objectMapper.readValue(response.body(), type);
 
         return parsed.get("access_token");
     }

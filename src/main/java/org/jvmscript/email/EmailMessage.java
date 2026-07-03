@@ -2,8 +2,8 @@ package org.jvmscript.email;
 
 import jakarta.mail.*;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
@@ -12,17 +12,17 @@ import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 
 public class EmailMessage {
 
-    private static final Logger logger = LogManager.getLogger(EmailMessage.class);
+    private static final Logger logger = LoggerFactory.getLogger(EmailMessage.class);
 
     Message message;
     Multipart smtpMultipart;
@@ -30,32 +30,33 @@ public class EmailMessage {
     public String[] saveAttachmentFiles(String directory) throws Exception {
 
         var filenameList = new ArrayList<String>();
-        Multipart multipart = null;
         logger.info("Content Type = {}", message.getContent().getClass().toString());
 
-        if (message.getContent().getClass() == MimeMultipart.class) {
-            multipart = (Multipart) message.getContent();
+        if (!(message.getContent() instanceof MimeMultipart)) {
+            throw new MessagingException("Message has no attachments, content type is " + message.getContentType());
         }
+        Multipart multipart = (Multipart) message.getContent();
 
         for (int i = 0; i < multipart.getCount(); i++) {
             var bodyPart = (MimeBodyPart) multipart.getBodyPart(i);
 
             var fname = bodyPart.getFileName();
-            var body = bodyPart.getContent();
 
             if (fname != null) {
+                //attachment names come from an external sender - strip any path
+                //components so a crafted name cannot escape the target directory
+                String safeFilename = FilenameUtils.getName(fname);
 
                 InputStream inputStream = bodyPart.getInputStream();
-                String filename = directory + bodyPart.getFileName();
-                filenameList.add(filename);
-                Path target = new File(filename).toPath();
-                Files.copy(inputStream, target);
+                Path target = Path.of(directory, safeFilename);
+                filenameList.add(target.toString());
+                Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
 
                 logger.info("Attachment Number {} Filename = {} Content Type = {} path = {}",
                         i,
-                        bodyPart.getFileName(),
+                        fname,
                         bodyPart.getContentType(),
-                        filename);
+                        target);
             }
         }
         return filenameList.toArray(new String[0]);
@@ -81,7 +82,11 @@ public class EmailMessage {
     }
 
     public String getSenderAddress() throws MessagingException {
-        return message.getFrom()[0].toString();
+        Address[] from = message.getFrom();
+        if (from == null || from.length == 0) {
+            throw new MessagingException("Message has no From address");
+        }
+        return from[0].toString();
     }
 
     public void setBody(String body) throws MessagingException, IOException {
@@ -171,7 +176,8 @@ public class EmailMessage {
         return null;
     }
     public void writeToEml(String filename) throws Exception{
-        var file = new FileOutputStream(new File(filename));
-        message.writeTo(file);
+        try (var file = new FileOutputStream(filename)) {
+            message.writeTo(file);
+        }
     }
 }
