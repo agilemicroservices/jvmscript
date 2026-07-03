@@ -22,8 +22,8 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.*;
 import org.apache.http.util.EntityUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +36,7 @@ import static org.jvmscript.property.PropertyUtility.propertyOpenFileClassPath;
 
 
 public final class JiraUtility {
-    private static final Logger logger = LogManager.getLogger(JiraUtility.class);
+    private static final Logger logger = LoggerFactory.getLogger(JiraUtility.class);
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static HttpHost jiraHost;
 
@@ -281,9 +281,7 @@ public final class JiraUtility {
             HttpClientContext context = createContext(username, password);
             response = client.execute(jiraHost, request, context);
         } catch (IOException e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
-            // TODO handle
         }
 
 
@@ -335,7 +333,6 @@ public final class JiraUtility {
             HttpClientContext context = createContext(username, password);
             response = client.execute(jiraHost, request, context);
         } catch (IOException e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
 

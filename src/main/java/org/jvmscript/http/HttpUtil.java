@@ -15,8 +15,8 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.AttributeKey;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -45,9 +45,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 // TODO add ssl/tls support
 // TODO enforce max redirects
+/** @deprecated parallel Netty-based implementation with TLS verification disabled — use {@link HttpUtility} */
+@Deprecated
 public class HttpUtil
 {
-    private static final Logger logger = LogManager.getLogger(HttpUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(HttpUtil.class);
     private  final long DEFAULT_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(15);
     private  AttributeKey<Queue<FullHttpResponse>> RESPONSE_QUEUE_KEY;
     private  final AtomicBoolean INITIALIZED = new AtomicBoolean();
