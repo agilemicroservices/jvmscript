@@ -17,8 +17,12 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.Temporal;
 import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
 import java.time.format.ResolverStyle;
@@ -60,6 +64,14 @@ public class JsonSchemaDataFrameLoader {
     private static final Pattern GROUPED_NUMBER =
             Pattern.compile("^[+-]?\\d{1,3}(,\\d{3})+(\\.\\d+)?$");
 
+    /**
+     * IMP-2 (@PastOrPresent port): {@code x-not-future} compares against "today"/"now" in EXCHANGE
+     * time — Eastern, DST-aware — NOT a fixed offset, so the boundary flips at New York midnight, not
+     * UTC midnight. A trade stamped today in New York must not be rejected because it is already
+     * tomorrow in UTC.
+     */
+    private static final ZoneId NOT_FUTURE_ZONE = ZoneId.of("America/New_York");
+
     /** Schema metadata for a single column. */
     private static class ColumnSchema {
         String name;
@@ -74,6 +86,7 @@ public class JsonSchemaDataFrameLoader {
         // Non-null when this column is parsed as a real date/datetime (catches impossible dates).
         DateTimeFormatter dateFormatter;
         boolean dateTime; // true => LocalDateTime, false => LocalDate (when dateFormatter != null)
+        boolean notFuture; // x-not-future: reject a date after today/now in NOT_FUTURE_ZONE (IMP-2)
 
         ColumnSchema(String name) {
             this.name = name;
@@ -207,6 +220,10 @@ public class JsonSchemaDataFrameLoader {
                 colSchema.dateTime = true;
             }
 
+            // IMP-2: x-not-future rejects future-dated values (only meaningful on a date column).
+            JsonNode notFutureNode = propSchema.get("x-not-future");
+            colSchema.notFuture = notFutureNode != null && notFutureNode.asBoolean(false);
+
             JsonNode enumNode = propSchema.get("enum");
             if (enumNode != null && enumNode.isArray()) {
                 colSchema.enumValues = new ArrayList<>();
@@ -328,32 +345,12 @@ public class JsonSchemaDataFrameLoader {
                 fieldErrors.add(new BadRow.FieldError(col, val, m.getMessage(), schemaLoc));
             }
 
-            // Semantic date check: regex patterns accept impossible dates (Feb 30); a real parse rejects them.
+            // Semantic date check (IMP-2): impossible dates (Feb 30) + x-not-future — shared with revalidate.
             for (ColumnSchema cs : columnSchemas.values()) {
-                if (cs.dateFormatter == null) {
-                    continue;
-                }
-                String raw = valueOf(headerIdx, row.values(), cs.name);
-                if (raw == null || raw.trim().isEmpty()) {
-                    continue;
-                }
-                String t = raw.trim();
-                boolean validDate;
-                try {
-                    // STRICT formatter rejects impossible dates; optional sections (e.g. [.SSS]) parse
-                    // fine when absent, so a plain parse is both correct and tolerant of missing millis.
-                    if (cs.dateTime) {
-                        LocalDateTime.parse(t, cs.dateFormatter);
-                    } else {
-                        LocalDate.parse(t, cs.dateFormatter);
-                    }
-                    validDate = true;
-                } catch (DateTimeException ex) {
-                    validDate = false;
-                }
-                if (!validDate) {
-                    fieldErrors.add(new BadRow.FieldError(cs.name, raw,
-                            "Invalid date; expected format " + (cs.format != null ? cs.format : "ISO"), null));
+                BadRow.FieldError dateError =
+                        checkDateColumn(cs, valueOf(headerIdx, row.values(), cs.name), options);
+                if (dateError != null) {
+                    fieldErrors.add(dateError);
                 }
             }
 
@@ -757,6 +754,54 @@ public class JsonSchemaDataFrameLoader {
      * inherently valid dates (a {@link LocalDate} cannot be Feb 30), so the semantic date check only
      * needs to fire for a date column that still holds a raw string.
      */
+    /**
+     * The semantic date validation shared by the load and revalidate paths (IMP-2): STRICT-parse a raw
+     * date string — rejecting impossible dates (e.g. Feb 30) that a regex/type check lets through — and,
+     * when {@code x-not-future} is set, reject a value after today/now in {@link #NOT_FUTURE_ZONE}.
+     * Returns a {@link BadRow.FieldError}, or null when the value is valid, blank, or not a date column.
+     */
+    private static BadRow.FieldError checkDateColumn(ColumnSchema cs, String raw, LoadOptions options) {
+        if (cs.dateFormatter == null || raw == null) {
+            return null;
+        }
+        String t = raw.trim();
+        if (t.isEmpty()) {
+            return null;
+        }
+        Temporal parsed;
+        try {
+            // STRICT formatter rejects impossible dates; optional sections (e.g. [.SSS]) parse fine when
+            // absent, so a plain parse is both correct and tolerant of missing millis.
+            parsed = cs.dateTime ? LocalDateTime.parse(t, cs.dateFormatter) : LocalDate.parse(t, cs.dateFormatter);
+        } catch (DateTimeException ex) {
+            return new BadRow.FieldError(cs.name, raw,
+                    "Invalid date; expected format " + (cs.format != null ? cs.format : "ISO"), null);
+        }
+        return checkNotFuture(cs, parsed, raw, options);
+    }
+
+    /**
+     * The not-future half of {@link #checkDateColumn}, applicable to an ALREADY-typed temporal: the
+     * revalidate path holds real {@link LocalDate}/{@link LocalDateTime} values (inherently valid dates)
+     * that must still be future-checked (IMP-2). STRICT — equal-to-now passes, one unit later fails —
+     * matching legacy {@code @PastOrPresent}. Comparison is in {@link #NOT_FUTURE_ZONE}, not the clock's
+     * own zone.
+     */
+    private static BadRow.FieldError checkNotFuture(ColumnSchema cs, Temporal parsed, String display,
+                                                    LoadOptions options) {
+        if (!cs.notFuture) {
+            return null;
+        }
+        Instant now = options.clock.instant();
+        boolean future = (parsed instanceof LocalDateTime dt)
+                ? dt.isAfter(LocalDateTime.ofInstant(now, NOT_FUTURE_ZONE))
+                : ((LocalDate) parsed).isAfter(LocalDate.ofInstant(now, NOT_FUTURE_ZONE));
+        return future
+                ? new BadRow.FieldError(cs.name, display,
+                        "Date is in the future; must be today or earlier (" + NOT_FUTURE_ZONE.getId() + ")", null)
+                : null;
+    }
+
     public static LoadResult revalidateDataFrame(DataFrame df, JsonNode schemaNode) {
         return revalidateDataFrame(df, schemaNode, new LoadOptions().verbose(false));
     }
@@ -792,29 +837,24 @@ public class JsonSchemaDataFrameLoader {
                 fieldErrors.add(new BadRow.FieldError(col, val, m.getMessage(), schemaLoc));
             }
 
-            // Semantic date check: only a date column still holding a raw String could be an impossible
-            // date; a typed LocalDate/LocalDateTime is inherently valid and is skipped.
+            // Semantic date check (IMP-2): a raw String date could be impossible (Feb 30); a typed
+            // LocalDate/LocalDateTime is inherently a valid date BUT is still future-checked (x-not-future)
+            // — the revalidate path holds real temporals, so typed values must be checked too.
             for (ColumnSchema cs : columnSchemas.values()) {
                 if (cs.dateFormatter == null) {
                     continue;
                 }
                 Object v = row.get(cs.name);
-                if (!(v instanceof CharSequence)) {
-                    continue;
+                BadRow.FieldError dateError;
+                if (v instanceof CharSequence) {
+                    dateError = checkDateColumn(cs, v.toString(), options);
+                } else if (v instanceof LocalDate || v instanceof LocalDateTime) {
+                    dateError = checkNotFuture(cs, (Temporal) v, v.toString(), options);
+                } else {
+                    dateError = null;
                 }
-                String t = v.toString().trim();
-                if (t.isEmpty()) {
-                    continue;
-                }
-                try {
-                    if (cs.dateTime) {
-                        LocalDateTime.parse(t, cs.dateFormatter);
-                    } else {
-                        LocalDate.parse(t, cs.dateFormatter);
-                    }
-                } catch (DateTimeException ex) {
-                    fieldErrors.add(new BadRow.FieldError(cs.name, t,
-                            "Invalid date; expected format " + (cs.format != null ? cs.format : "ISO"), null));
+                if (dateError != null) {
+                    fieldErrors.add(dateError);
                 }
             }
 
@@ -901,6 +941,12 @@ public class JsonSchemaDataFrameLoader {
         public boolean validateAndFilter = true;
         /** Accept properly grouped thousands separators in numeric fields (e.g. "1,234.56"). */
         public boolean allowThousandsSeparators = true;
+        /**
+         * IMP-2 (@PastOrPresent port): the clock {@code x-not-future} compares against — injectable so
+         * tests can fix "now". "Now" is taken as {@code clock.instant()} and compared in
+         * {@link #NOT_FUTURE_ZONE} (America/New_York), so the clock's own zone is irrelevant.
+         */
+        public Clock clock = Clock.systemUTC();
         public List<BadRow> badRows = new ArrayList<>();
 
         public LoadOptions() {}
@@ -922,6 +968,11 @@ public class JsonSchemaDataFrameLoader {
 
         public LoadOptions allowThousandsSeparators(boolean allow) {
             this.allowThousandsSeparators = allow;
+            return this;
+        }
+
+        public LoadOptions clock(Clock clock) {
+            this.clock = clock;
             return this;
         }
 

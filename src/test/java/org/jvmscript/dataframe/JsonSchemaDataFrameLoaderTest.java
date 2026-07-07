@@ -168,4 +168,83 @@ class JsonSchemaDataFrameLoaderTest {
         assertEquals(0, badHour.validData.height());
         assertEquals(1, badHour.validationErrors.size());
     }
+
+    // --- IMP-2: x-not-future (@PastOrPresent port) -------------------------------------------------
+    // Comparison zone is America/New_York; strict (no tolerance); the clock is injected so "now" is fixed.
+
+    private static final String NF_DATE_SCHEMA = """
+            $schema: "https://json-schema.org/draft/2020-12/schema"
+            type: array
+            items:
+              type: object
+              properties:
+                d: { type: string, x-date-format: "yyyyMMdd", x-not-future: true }
+              required: [d]
+              additionalProperties: false
+            """;
+
+    private static final String NF_TS_SCHEMA = """
+            $schema: "https://json-schema.org/draft/2020-12/schema"
+            type: array
+            items:
+              type: object
+              properties:
+                ts: { type: string, x-date-format: "yyyyMMdd-HH:mm:ss", x-not-future: true }
+              required: [ts]
+              additionalProperties: false
+            """;
+
+    private LoadResult loadWithClock(String schema, String csv, java.time.Clock clock) throws Exception {
+        Path s = dir.resolve("nf-schema.yaml");
+        Path c = dir.resolve("nf-data.csv");
+        Files.writeString(s, schema);
+        Files.writeString(c, csv);
+        return YamlSchemaDataFrameLoader.loadCsvWithYamlSchema(c.toString(), s.toString(),
+                new JsonSchemaDataFrameLoader.LoadOptions().verbose(false).clock(clock));
+    }
+
+    private static java.time.Clock at(String instant) {
+        return java.time.Clock.fixed(java.time.Instant.parse(instant), java.time.ZoneOffset.UTC);
+    }
+
+    @Test
+    void notFutureRejectsFutureAcceptsToday() throws Exception {
+        // 2026-07-03 12:00 UTC = 08:00 New York -> "today" in NY is 2026-07-03.
+        java.time.Clock clock = at("2026-07-03T12:00:00Z");
+        LoadResult r = loadWithClock(NF_DATE_SCHEMA, "d\n20260703\n20260704\n", clock);
+        assertEquals(1, r.validData.height(), "today passes, tomorrow (future) rejected");
+        assertEquals(1, r.validationErrors.size());
+        assertEquals(java.time.LocalDate.of(2026, 7, 3), r.validData.getColumn("d").get(0));
+    }
+
+    @Test
+    void notFutureUsesNewYorkZoneAtUtcBoundary() throws Exception {
+        // 2026-07-04 02:00 UTC = 2026-07-03 22:00 New York (EDT, UTC-4): it is ALREADY 2026-07-04 in
+        // UTC but STILL 2026-07-03 in NY. A UTC-based check would wrongly accept 20260704.
+        java.time.Clock clock = at("2026-07-04T02:00:00Z");
+        LoadResult r = loadWithClock(NF_DATE_SCHEMA, "d\n20260703\n20260704\n", clock);
+        assertEquals(1, r.validData.height(), "20260703 (today in NY) passes; 20260704 (tomorrow in NY) rejected");
+        assertEquals(1, r.validationErrors.size());
+        assertEquals(java.time.LocalDate.of(2026, 7, 3), r.validData.getColumn("d").get(0));
+    }
+
+    @Test
+    void notFutureIsStrictNoToleranceOnDatetime() throws Exception {
+        // 2026-07-03 13:30:00 UTC = 09:30:00 New York -> now(NY) == 2026-07-03T09:30:00.
+        java.time.Clock clock = at("2026-07-03T13:30:00Z");
+        LoadResult r = loadWithClock(NF_TS_SCHEMA,
+                "ts\n20260703-09:30:00\n20260703-09:30:01\n", clock); // equal-to-now, now+1s
+        assertEquals(1, r.validData.height(), "equal-to-now passes, one second later is future -> rejected");
+        assertEquals(1, r.validationErrors.size());
+        assertEquals(java.time.LocalDateTime.of(2026, 7, 3, 9, 30, 0), r.validData.getColumn("ts").get(0));
+    }
+
+    @Test
+    void notFutureInertWithoutTheKeyword() throws Exception {
+        // Same future date, but the control schema omits x-not-future -> the future check must not fire.
+        String control = NF_DATE_SCHEMA.replace(", x-not-future: true", "");
+        LoadResult r = loadWithClock(control, "d\n20260704\n", at("2026-07-03T12:00:00Z"));
+        assertEquals(1, r.validData.height(), "no x-not-future -> a future date is accepted");
+        assertEquals(0, r.getTotalBadRows());
+    }
 }
