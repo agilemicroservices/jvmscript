@@ -334,9 +334,11 @@ public class DelimitedRecordFactory extends RecordFactory {
                                 }
 
                                 writer.write(bigDecimal.toPlainString());
-                            } else if (object.getClass() == Double.class || object.getClass() == double.class) {
-                                BigDecimal bigDecimal = new BigDecimal((Double) object);
-                                if (beanField.dataField.round() == true || roundDecimals == true) {
+                            } else if (object instanceof Double || object.getClass() == double.class) {
+                                double d = (Double) object;
+                                // valueOf keeps the shortest decimal form (12.34), not the binary expansion
+                                BigDecimal bigDecimal = BigDecimal.valueOf(d);
+                                if (beanField.dataField.round() || roundDecimals) {
                                     bigDecimal = bigDecimal.setScale(beanField.dataField.scale(), RoundingMode.HALF_UP);
                                 }
                                 writer.write(bigDecimal.toPlainString());

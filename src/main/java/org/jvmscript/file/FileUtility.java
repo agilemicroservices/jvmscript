@@ -671,6 +671,9 @@ public class FileUtility {
     }
 
     public static boolean fileExists(String filename) throws Exception {
+        if (filename.indexOf('*') < 0 && filename.indexOf('?') < 0 && Files.isRegularFile(Paths.get(filename))) {
+            return true;
+        }
         var directoryName = getFilePath(filename);
         if ("".equals(directoryName)) directoryName = ".";
         if (!new File(directoryName).isDirectory()) {

@@ -16,7 +16,9 @@ public class SSHUtility {
 
     private static SSHClient sshClient = null;
 
-    private static boolean verifyHostKey = true;
+    // off by default, as in 4.0 (any server key is accepted); SSHEnableHostKeyVerification() or
+    // SSHSetHostKeyFingerprint() turn verification on for scripts that want it
+    private static boolean verifyHostKey = false;
     private static String knownHostsFile = null;
     private static String hostKeyFingerprint = null;
 
