@@ -131,12 +131,12 @@ public class SqlUtility {
 
         results.add(resultRow);
 
+        int columnCount = table.columns().size();
         for (Row row : table.rows()) {
             resultRow = new ArrayList<>();
 
-            Collection<Object> objectArray = row.asMap().values();
-            for (Object object : objectArray) {
-                resultRow.add(object);
+            for (int i = 0; i < columnCount; i++) {
+                resultRow.add(row.getObject(i));
             }
             results.add(resultRow);
         }

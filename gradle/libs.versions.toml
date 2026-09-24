@@ -31,7 +31,7 @@ json-schema-validator = "1.5.9"
 zip4j = "2.11.5"
 sshj = "0.40.0"
 disruptor = "4.0.0"
-sql2o = "1.9.1"
+sql2o = "1.9.2"
 # netty 4.2 exists but netty only serves the deprecated HttpUtil - remove with it
 netty = "4.1.135.Final"
 # box-java-sdk 10.x is Box's rewritten next-gen SDK - staying on the classic 4.x line
