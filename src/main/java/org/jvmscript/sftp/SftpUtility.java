@@ -125,6 +125,11 @@ public class SftpUtility {
         sftpClient.cd(remoteDirectory);
     }
 
+    public static void sFtpMkdirs(String remoteDirectory) throws IOException {
+        logger.info("SftpUtility.mkdirs remoteDirectory = {}", remoteDirectory);
+        sftpClient.mkdirs(remoteDirectory);
+    }
+
     public static void sFtpLcd(String localDirectory) throws Exception {
         //no implementation
         logger.info("********* no implmentation SftpUtility.lcd localDirectory = {}", localDirectory);
